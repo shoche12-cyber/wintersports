@@ -8,1200 +8,582 @@
 <meta name="apple-mobile-web-app-title" content="遠征プランナー">
 <title>スノボ遠征プランナー</title>
 <style>
-  /* ===== リセット・ベース ===== */
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
   html, body { height: 100%; background: #f2f2f7; font-family: -apple-system, 'Hiragino Sans', sans-serif; overscroll-behavior: none; }
-
-  /* ===== カラー変数 ===== */
   :root {
-    --navy: #0a1628;
-    --blue: #007aff;
-    --blue-light: #e8f1ff;
-    --green: #34c759;
-    --green-light: #e8f9ed;
-    --red: #ff3b30;
-    --gray1: #8e8e93;
-    --gray2: #c7c7cc;
-    --gray3: #f2f2f7;
-    --gray4: #e5e5ea;
-    --white: #ffffff;
-    --text: #000000;
-    --text2: #3c3c43;
-    --text3: #8e8e93;
-    --separator: rgba(60,60,67,0.12);
-    --tab-height: 83px;
-    --safe-bottom: env(safe-area-inset-bottom, 0px);
-    --safe-top: env(safe-area-inset-top, 44px);
+    --navy: #0a1628; --blue: #007aff; --blue-light: #e8f1ff;
+    --green: #34c759; --red: #ff3b30;
+    --gray2: #c7c7cc; --gray3: #f2f2f7; --gray4: #e5e5ea;
+    --white: #ffffff; --text: #000000; --text2: #3c3c43; --text3: #8e8e93;
+    --sep: rgba(60,60,67,0.12);
+    --tab-h: 83px; --safe-b: env(safe-area-inset-bottom,0px); --safe-t: env(safe-area-inset-top,44px);
   }
+  #app { display:flex; flex-direction:column; height:100vh; overflow:hidden; }
 
-  /* ===== アプリ全体 ===== */
-  #app { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+  /* ナビバー */
+  .nav { background:rgba(255,255,255,0.92); backdrop-filter:saturate(180%) blur(20px); -webkit-backdrop-filter:saturate(180%) blur(20px); border-bottom:0.5px solid var(--sep); padding-top:var(--safe-t); flex-shrink:0; z-index:10; }
+  .nav-inner { height:44px; display:flex; align-items:center; justify-content:space-between; padding:0 16px; }
+  .nav-title { font-size:17px; font-weight:600; color:var(--text); }
+  .nav-btn { font-size:17px; color:var(--blue); background:none; border:none; cursor:pointer; padding:4px 0; font-family:inherit; }
+  .nav-back::before { content:'‹'; font-size:22px; margin-right:2px; }
 
-  /* ===== ナビゲーションバー ===== */
-  .nav-bar {
-    background: rgba(255,255,255,0.92);
-    backdrop-filter: saturate(180%) blur(20px);
-    -webkit-backdrop-filter: saturate(180%) blur(20px);
-    border-bottom: 0.5px solid var(--separator);
-    padding-top: var(--safe-top);
-    flex-shrink: 0;
-    z-index: 10;
-  }
-  .nav-inner { height: 44px; display: flex; align-items: center; justify-content: space-between; padding: 0 16px; }
-  .nav-title { font-size: 17px; font-weight: 600; color: var(--text); }
-  .nav-btn { font-size: 17px; color: var(--blue); background: none; border: none; cursor: pointer; padding: 4px 0; font-family: inherit; }
-  .nav-back { display: flex; align-items: center; gap: 2px; }
-  .nav-back::before { content: '‹'; font-size: 22px; line-height: 1; margin-top: -2px; }
+  /* コンテンツ */
+  .content { flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; }
+  .ci { padding-bottom:calc(var(--tab-h) + 8px); }
 
-  /* ===== コンテンツエリア ===== */
-  .content { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; }
-  .content-inner { padding-bottom: calc(var(--tab-height) + 8px); }
+  /* タブバー */
+  .tabbar { position:fixed; bottom:0; left:0; right:0; height:var(--tab-h); background:rgba(255,255,255,0.92); backdrop-filter:saturate(180%) blur(20px); -webkit-backdrop-filter:saturate(180%) blur(20px); border-top:0.5px solid var(--sep); display:flex; z-index:100; padding-bottom:var(--safe-b); }
+  .tab { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; border:none; background:none; cursor:pointer; padding-top:8px; color:var(--gray2); font-family:inherit; }
+  .tab.on { color:var(--blue); }
+  .ti { font-size:24px; line-height:1; }
+  .tl { font-size:10px; font-weight:500; }
 
-  /* ===== タブバー ===== */
-  .tab-bar {
-    position: fixed; bottom: 0; left: 0; right: 0;
-    height: var(--tab-height);
-    background: rgba(255,255,255,0.92);
-    backdrop-filter: saturate(180%) blur(20px);
-    -webkit-backdrop-filter: saturate(180%) blur(20px);
-    border-top: 0.5px solid var(--separator);
-    display: flex; z-index: 100;
-    padding-bottom: var(--safe-bottom);
-  }
-  .tab-item { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; border: none; background: none; cursor: pointer; padding-top: 8px; color: var(--gray1); font-family: inherit; }
-  .tab-item.active { color: var(--blue); }
-  .tab-icon { font-size: 24px; line-height: 1; }
-  .tab-label { font-size: 10px; font-weight: 500; }
+  /* リスト */
+  .sec { margin:20px 16px 0; }
+  .sh { font-size:13px; color:var(--text3); margin-bottom:6px; padding:0 4px; text-transform:uppercase; letter-spacing:0.03em; }
+  .lg { background:var(--white); border-radius:12px; overflow:hidden; }
+  .lr { display:flex; align-items:center; min-height:44px; padding:10px 16px; border-bottom:0.5px solid var(--sep); gap:12px; cursor:pointer; -webkit-user-select:none; }
+  .lr:last-child { border-bottom:none; }
+  .lr:active { background:var(--gray3); }
+  .li { width:30px; height:30px; border-radius:7px; display:flex; align-items:center; justify-content:center; font-size:15px; flex-shrink:0; }
+  .lb { flex:1; min-width:0; }
+  .lt { font-size:17px; color:var(--text); }
+  .ls { font-size:13px; color:var(--text3); margin-top:1px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .cv { color:var(--gray2); font-size:18px; }
 
-  /* ===== グループリスト（iOSスタイル）===== */
-  .list-section { margin: 20px 16px 0; }
-  .list-header { font-size: 13px; color: var(--text3); margin-bottom: 6px; padding: 0 4px; font-weight: 400; text-transform: uppercase; letter-spacing: 0.03em; }
-  .list-group { background: var(--white); border-radius: 12px; overflow: hidden; }
-  .list-row { display: flex; align-items: center; min-height: 44px; padding: 10px 16px; border-bottom: 0.5px solid var(--separator); gap: 12px; cursor: pointer; -webkit-user-select: none; }
-  .list-row:last-child { border-bottom: none; }
-  .list-row:active { background: var(--gray3); }
-  .list-row-icon { width: 30px; height: 30px; border-radius: 7px; display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; }
-  .icon-blue { background: #007aff; }
-  .icon-green { background: #34c759; }
-  .icon-teal { background: #5ac8fa; }
-  .icon-orange { background: #ff9500; }
-  .list-row-body { flex: 1; min-width: 0; }
-  .list-row-title { font-size: 17px; color: var(--text); }
-  .list-row-sub { font-size: 13px; color: var(--text3); margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .chevron { color: var(--gray2); font-size: 18px; font-weight: 300; }
-  .list-badge { background: var(--blue); color: #fff; font-size: 13px; font-weight: 500; padding: 2px 8px; border-radius: 10px; }
+  /* ヒーローカード */
+  .hc { background:var(--navy); border-radius:16px; padding:20px; color:#fff; margin:16px; }
+  .hc.grn { background:linear-gradient(135deg,#1a472a,#2d6a4f); }
+  .hn { font-size:22px; font-weight:600; margin-bottom:3px; }
+  .hsub { font-size:14px; color:rgba(255,255,255,0.65); margin-bottom:14px; }
+  .htags { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:12px; }
+  .htag { font-size:12px; padding:3px 10px; border-radius:10px; background:rgba(255,255,255,0.18); color:rgba(255,255,255,0.95); }
+  .hstats { display:grid; grid-template-columns:repeat(3,1fr); border-top:0.5px solid rgba(255,255,255,0.2); padding-top:14px; }
+  .hst { text-align:center; }
+  .hst+.hst { border-left:0.5px solid rgba(255,255,255,0.2); }
+  .hstv { font-size:17px; font-weight:600; }
+  .hstl { font-size:11px; color:rgba(255,255,255,0.55); margin-top:2px; }
+  .hurl { display:flex; align-items:center; gap:8px; background:rgba(255,255,255,0.12); border-radius:10px; padding:10px 12px; margin-top:12px; cursor:pointer; }
+  .hurl span { font-size:13px; color:rgba(255,255,255,0.85); flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 
-  /* ===== ヒーローカード ===== */
-  .hero-card { background: var(--navy); border-radius: 16px; padding: 20px; color: #fff; margin: 16px; }
-  .hero-card.green-card { background: linear-gradient(135deg, #1a472a 0%, #2d6a4f 100%); }
-  .hero-name { font-size: 22px; font-weight: 600; margin-bottom: 3px; }
-  .hero-sub { font-size: 14px; color: rgba(255,255,255,0.65); margin-bottom: 16px; }
-  .hero-tags { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
-  .hero-tag { font-size: 12px; padding: 3px 10px; border-radius: 10px; background: rgba(255,255,255,0.18); color: rgba(255,255,255,0.95); }
-  .hero-stats { display: grid; grid-template-columns: repeat(3, 1fr); border-top: 0.5px solid rgba(255,255,255,0.2); padding-top: 14px; gap: 0; }
-  .hero-stat { text-align: center; }
-  .hero-stat + .hero-stat { border-left: 0.5px solid rgba(255,255,255,0.2); }
-  .hstat-v { font-size: 17px; font-weight: 600; }
-  .hstat-l { font-size: 11px; color: rgba(255,255,255,0.55); margin-top: 2px; }
-  .hero-stat4 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-top: 14px; border-top: 0.5px solid rgba(255,255,255,0.2); padding-top: 14px; }
-  .hstat4 { background: rgba(255,255,255,0.12); border-radius: 10px; padding: 10px; }
-  .hstat4-v { font-size: 17px; font-weight: 600; }
-  .hstat4-l { font-size: 11px; color: rgba(255,255,255,0.55); margin-top: 2px; }
-  .hero-url { display: flex; align-items: center; gap: 8px; background: rgba(255,255,255,0.12); border-radius: 10px; padding: 10px 12px; margin-top: 10px; cursor: pointer; }
-  .hero-url span { font-size: 13px; color: rgba(255,255,255,0.85); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  /* フォーム */
+  .fs { margin:16px 16px 0; }
+  .fg { background:var(--white); border-radius:12px; overflow:hidden; }
+  .fr { display:flex; align-items:center; min-height:44px; padding:0 16px; border-bottom:0.5px solid var(--sep); gap:12px; }
+  .fr:last-child { border-bottom:none; }
+  .fl { font-size:16px; color:var(--text); min-width:82px; flex-shrink:0; }
+  .fl.sm { font-size:14px; min-width:72px; }
+  .fr input, .fr select, .fr textarea { flex:1; border:none; outline:none; font-size:16px; color:var(--text); background:transparent; font-family:inherit; text-align:right; min-height:44px; -webkit-appearance:none; }
+  .fr input::placeholder { color:var(--gray2); }
+  .fr textarea { text-align:left; resize:none; padding:10px 0; min-height:72px; font-size:15px; }
+  .fu { font-size:14px; color:var(--text3); flex-shrink:0; }
 
-  /* ===== フォーム ===== */
-  .form-section { margin: 20px 16px 0; }
-  .form-group { background: var(--white); border-radius: 12px; overflow: hidden; }
-  .form-row { display: flex; align-items: center; min-height: 44px; padding: 0 16px; border-bottom: 0.5px solid var(--separator); gap: 12px; }
-  .form-row:last-child { border-bottom: none; }
-  .form-label { font-size: 17px; color: var(--text); min-width: 88px; flex-shrink: 0; }
-  .form-row input, .form-row select, .form-row textarea {
-    flex: 1; border: none; outline: none; font-size: 17px; color: var(--text); background: transparent;
-    font-family: inherit; text-align: right; min-height: 44px; -webkit-appearance: none;
-  }
-  .form-row input::placeholder { color: var(--gray2); }
-  .form-row textarea { text-align: left; resize: none; padding: 10px 0; min-height: 80px; }
-  .form-row select { color: var(--text); }
-  .form-unit { font-size: 15px; color: var(--text3); flex-shrink: 0; }
+  /* チップ */
+  .cw { padding:10px 12px; display:flex; flex-wrap:wrap; gap:6px; min-height:44px; align-items:center; }
+  .chip { display:inline-flex; align-items:center; gap:6px; background:var(--blue-light); border-radius:16px; padding:5px 5px 5px 12px; font-size:14px; color:var(--blue); }
+  .cdel { width:20px; height:20px; border-radius:50%; background:rgba(0,122,255,0.2); color:var(--blue); display:flex; align-items:center; justify-content:center; font-size:13px; cursor:pointer; }
+  .ce { font-size:14px; color:var(--text3); }
 
-  /* ===== ボタン ===== */
-  .ios-btn { display: block; width: calc(100% - 32px); margin: 12px 16px; padding: 14px; border: none; border-radius: 12px; font-size: 17px; font-weight: 500; font-family: inherit; cursor: pointer; text-align: center; -webkit-appearance: none; }
-  .ios-btn:active { opacity: 0.75; }
-  .btn-primary { background: var(--navy); color: #fff; }
-  .btn-blue { background: var(--blue); color: #fff; }
-  .btn-secondary { background: var(--white); color: var(--blue); border: 0.5px solid var(--separator); }
-  .btn-danger { background: var(--white); color: var(--red); border: 0.5px solid var(--separator); }
-  .btn-disabled { opacity: 0.5; }
+  /* ボタン */
+  .btn { display:block; width:calc(100% - 32px); margin:12px 16px; padding:14px; border:none; border-radius:12px; font-size:17px; font-weight:500; font-family:inherit; cursor:pointer; text-align:center; -webkit-appearance:none; }
+  .btn:active { opacity:0.75; }
+  .bp { background:var(--navy); color:#fff; }
+  .bs { background:var(--white); color:var(--blue); border:0.5px solid var(--sep); }
+  .bd { background:var(--white); color:var(--red); border:0.5px solid var(--sep); }
 
-  /* ===== メンバーチップ ===== */
-  .chips-wrap { padding: 10px 12px; display: flex; flex-wrap: wrap; gap: 6px; min-height: 44px; align-items: center; }
-  .chip { display: inline-flex; align-items: center; gap: 6px; background: var(--blue-light); border-radius: 16px; padding: 5px 5px 5px 12px; font-size: 14px; color: var(--blue); }
-  .chip-del { width: 20px; height: 20px; border-radius: 50%; background: rgba(0,0,0,0.15); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 13px; cursor: pointer; line-height: 1; }
-  .chip-empty { font-size: 14px; color: var(--text3); }
+  /* 情報行 */
+  .is { margin:12px 16px 0; background:var(--white); border-radius:12px; overflow:hidden; }
+  .ir { display:flex; justify-content:space-between; align-items:flex-start; padding:12px 16px; border-bottom:0.5px solid var(--sep); gap:12px; }
+  .ir:last-child { border-bottom:none; }
+  .ik { font-size:15px; color:var(--text3); flex-shrink:0; }
+  .iv { font-size:15px; color:var(--text); font-weight:500; text-align:right; flex:1; word-break:break-all; }
+  .iv.url { color:var(--blue); cursor:pointer; }
 
-  /* ===== 雪質情報ボックス ===== */
-  .snow-box { background: var(--white); border-radius: 12px; overflow: hidden; margin: 0 16px; }
-  .snow-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; border-bottom: 0.5px solid var(--separator); }
-  .snow-row:last-child { border-bottom: none; }
-  .snow-key { font-size: 15px; color: var(--text3); }
-  .snow-val { font-size: 15px; color: var(--text); font-weight: 500; }
-  .snow-val.good { color: var(--green); }
-  .snow-val.pending { color: var(--text3); font-weight: 400; }
+  /* セグメント */
+  .seg { display:flex; background:var(--gray4); border-radius:9px; padding:2px; margin:0 16px 10px; }
+  .sb { flex:1; padding:7px; border:none; border-radius:7px; font-size:14px; font-family:inherit; cursor:pointer; color:var(--text3); background:transparent; }
+  .sb.on { background:var(--white); font-weight:600; color:var(--text); }
 
-  /* ===== 費用バー ===== */
-  .cost-bar-row { padding: 10px 16px; border-bottom: 0.5px solid var(--separator); }
-  .cost-bar-row:last-child { border-bottom: none; }
-  .cost-bar-label { display: flex; justify-content: space-between; margin-bottom: 5px; }
-  .cost-bar-name { font-size: 14px; color: var(--text2); }
-  .cost-bar-val { font-size: 14px; font-weight: 500; color: var(--text); }
-  .cost-bar-bg { background: var(--gray3); border-radius: 4px; height: 6px; overflow: hidden; }
-  .cost-bar-fill { height: 6px; border-radius: 4px; transition: width 0.3s; }
+  /* 費用バー */
+  .cbr { padding:10px 16px; border-bottom:0.5px solid var(--sep); }
+  .cbr:last-child { border-bottom:none; }
+  .cbl { display:flex; justify-content:space-between; margin-bottom:5px; }
+  .cbn { font-size:14px; color:var(--text2); }
+  .cbv { font-size:14px; font-weight:500; }
+  .cbb { background:var(--gray3); border-radius:4px; height:6px; overflow:hidden; }
+  .cbf { height:6px; border-radius:4px; transition:width 0.3s; }
 
-  /* ===== AIチャット ===== */
-  .chat-area { display: flex; flex-direction: column; }
-  .chat-msgs { padding: 12px 16px; display: flex; flex-direction: column; gap: 10px; }
-  .msg { max-width: 78%; padding: 10px 14px; font-size: 15px; line-height: 1.5; word-break: break-word; }
-  .msg.ai { background: var(--white); color: var(--text); border-radius: 18px 18px 18px 4px; align-self: flex-start; }
-  .msg.user { background: var(--blue); color: #fff; border-radius: 18px 18px 4px 18px; align-self: flex-end; }
-  .msg.typing { background: var(--white); color: var(--text3); border-radius: 18px 18px 18px 4px; align-self: flex-start; font-size: 20px; padding: 6px 14px; }
-  .chat-chips { display: flex; gap: 8px; flex-wrap: wrap; padding: 4px 16px 8px; }
-  .chat-chip { font-size: 13px; padding: 6px 13px; border-radius: 16px; border: 1px solid var(--gray4); background: var(--white); color: var(--text2); cursor: pointer; -webkit-user-select: none; }
-  .chat-chip:active { background: var(--gray3); }
-  .chat-input-bar { display: flex; align-items: center; gap: 8px; padding: 8px 16px; border-top: 0.5px solid var(--separator); background: rgba(255,255,255,0.95); }
-  .chat-input-bar input { flex: 1; background: var(--gray3); border: none; border-radius: 20px; padding: 9px 14px; font-size: 15px; color: var(--text); font-family: inherit; outline: none; }
-  .chat-send { width: 36px; height: 36px; border-radius: 50%; background: var(--blue); border: none; color: #fff; font-size: 18px; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; }
-  .chat-send:disabled { background: var(--gray4); }
+  /* スケジュール */
+  .schl { background:var(--white); border-radius:12px; overflow:hidden; }
+  .schr { display:flex; gap:12px; padding:12px 16px; border-bottom:0.5px solid var(--sep); align-items:flex-start; }
+  .schr:last-child { border-bottom:none; }
+  .schd { width:40px; text-align:center; flex-shrink:0; }
+  .schdd { font-size:13px; font-weight:600; }
+  .schdw { font-size:11px; color:var(--text3); }
+  .schb { flex:1; }
+  .scht { font-size:15px; font-weight:500; }
+  .schs { font-size:13px; color:var(--text3); margin-top:1px; }
 
-  /* ===== ステータスメッセージ ===== */
-  .status-msg { text-align: center; font-size: 14px; color: var(--green); padding: 6px 16px; min-height: 28px; }
+  /* メンバーチップ */
+  .mc { display:inline-flex; align-items:center; gap:6px; background:var(--blue-light); border-radius:16px; padding:5px 5px 5px 12px; font-size:14px; color:var(--blue); margin:3px; }
+  .mcd { width:20px; height:20px; border-radius:50%; background:rgba(0,122,255,0.2); color:var(--blue); display:flex; align-items:center; justify-content:center; font-size:13px; cursor:pointer; }
 
-  /* ===== 空の状態 ===== */
-  .empty-state { text-align: center; padding: 48px 24px; color: var(--text3); }
-  .empty-icon { font-size: 48px; margin-bottom: 12px; }
-  .empty-title { font-size: 17px; font-weight: 500; color: var(--text2); margin-bottom: 6px; }
-  .empty-sub { font-size: 14px; }
-
-  /* ===== 情報行 ===== */
-  .info-section { margin: 16px 16px 0; background: var(--white); border-radius: 12px; overflow: hidden; }
-  .info-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; border-bottom: 0.5px solid var(--separator); }
-  .info-row:last-child { border-bottom: none; }
-  .info-key { font-size: 15px; color: var(--text3); }
-  .info-val { font-size: 15px; color: var(--text); font-weight: 500; max-width: 60%; text-align: right; }
-
-  /* ===== APIキー設定画面 ===== */
-  .apikey-banner { background: #fff3cd; border: 1px solid #ffc107; border-radius: 12px; margin: 16px; padding: 14px 16px; }
-  .apikey-banner-title { font-size: 15px; font-weight: 600; color: #856404; margin-bottom: 4px; }
-  .apikey-banner-text { font-size: 13px; color: #856404; line-height: 1.5; }
-  .apikey-input-row { display: flex; gap: 8px; margin-top: 10px; }
-  .apikey-input-row input { flex: 1; border: 1px solid var(--gray4); border-radius: 8px; padding: 8px 12px; font-size: 14px; font-family: inherit; outline: none; }
-  .apikey-input-row button { background: #856404; color: #fff; border: none; border-radius: 8px; padding: 8px 16px; font-size: 14px; font-family: inherit; cursor: pointer; white-space: nowrap; }
-
-  /* ===== 遠征の日程行 ===== */
-  .schedule-list { margin: 0 16px; background: var(--white); border-radius: 12px; overflow: hidden; }
-  .schedule-row { display: flex; gap: 12px; padding: 12px 16px; border-bottom: 0.5px solid var(--separator); align-items: flex-start; }
-  .schedule-row:last-child { border-bottom: none; }
-  .schedule-date { width: 40px; text-align: center; flex-shrink: 0; }
-  .schedule-date-d { font-size: 13px; font-weight: 600; color: var(--text); }
-  .schedule-date-w { font-size: 11px; color: var(--text3); }
-  .schedule-body { flex: 1; }
-  .schedule-title { font-size: 15px; font-weight: 500; color: var(--text); }
-  .schedule-sub { font-size: 13px; color: var(--text3); margin-top: 1px; }
-
-  /* ===== ユーティリティ ===== */
-  .spacer-sm { height: 12px; }
-  .spacer-md { height: 20px; }
-  .divider { height: 0.5px; background: var(--separator); margin: 0 16px; }
+  /* 空状態 */
+  .empty { text-align:center; padding:48px 24px; color:var(--text3); }
+  .eico { font-size:48px; margin-bottom:12px; }
+  .etit { font-size:17px; font-weight:500; color:var(--text2); margin-bottom:6px; }
+  .esub { font-size:14px; }
+  .sm-gap { height:12px; }
+  .status { text-align:center; font-size:14px; color:var(--green); padding:6px 16px; min-height:28px; }
 </style>
 </head>
 <body>
 <div id="app">
-  <div class="nav-bar">
+  <div class="nav">
     <div class="nav-inner">
-      <button class="nav-btn nav-back" id="nav-back-btn" style="visibility:hidden" onclick="goBack()">遠征</button>
-      <span class="nav-title" id="nav-title">遠征プランナー</span>
-      <button class="nav-btn" id="nav-right-btn" style="visibility:hidden" onclick="navRightAction()">完了</button>
+      <button class="nav-btn nav-back" id="bb" style="visibility:hidden" onclick="goBack()">戻る</button>
+      <span class="nav-title" id="nt">遠征プランナー</span>
+      <button class="nav-btn" id="rb" style="visibility:hidden" onclick="navRight()">保存</button>
     </div>
   </div>
-
-  <div class="content" id="content">
-    <div class="content-inner" id="content-inner"></div>
-  </div>
-
-  <div class="tab-bar" id="tab-bar">
-    <button class="tab-item active" onclick="switchTab('trips')" id="tab-trips">
-      <span class="tab-icon">🗓</span>
-      <span class="tab-label">遠征</span>
-    </button>
-    <button class="tab-item" onclick="switchTab('resorts')" id="tab-resorts">
-      <span class="tab-icon">⛷️</span>
-      <span class="tab-label">ゲレンデ</span>
-    </button>
-    <button class="tab-item" onclick="switchTab('cost')" id="tab-cost">
-      <span class="tab-icon">💰</span>
-      <span class="tab-label">費用</span>
-    </button>
-    <button class="tab-item" onclick="switchTab('ai')" id="tab-ai">
-      <span class="tab-icon">🤖</span>
-      <span class="tab-label">AI相談</span>
-    </button>
-    <button class="tab-item" onclick="switchTab('gear')" id="tab-gear">
-      <span class="tab-icon">🎿</span>
-      <span class="tab-label">ギア</span>
-    </button>
+  <div class="content" id="ct"><div class="ci" id="ci"></div></div>
+  <div class="tabbar">
+    <button class="tab on" id="tab-trips"   onclick="sw('trips')">  <span class="ti">🗓</span> <span class="tl">遠征</span></button>
+    <button class="tab"    id="tab-resorts" onclick="sw('resorts')"><span class="ti">⛷️</span><span class="tl">ゲレンデ</span></button>
+    <button class="tab"    id="tab-cost"    onclick="sw('cost')">   <span class="ti">💰</span> <span class="tl">費用</span></button>
+    <button class="tab"    id="tab-gear"    onclick="sw('gear')">   <span class="ti">🎿</span> <span class="tl">ギア</span></button>
   </div>
 </div>
-
 <script>
-// ===== 状態管理 =====
-var state = {
-  tab: 'trips',
-  screen: 'main',   // main / trip-detail / trip-add / resort-list / resort-detail / resort-add / resort-ai-confirm / gear-add / gear-detail
-  navStack: [],
-  apiKey: '',
-  data: { trips: [], resorts: [], gear: [] },
-  temp: { tripMembers: [], resortDraft: null, editTripId: null, gearFilter: 'owned', gearSport: 'snowboard' },
-  chatHistory: [],
-  costCalc: { members: 4, nights: 3, trans: 12000, lodge: 9000, lift: 8000, food: 3000 }
+// ===== STATE =====
+var S = {
+  tab:'trips', screen:'main', stack:[],
+  data:{ trips:[], resorts:[], gear:[] },
+  tmp:{ tripMem:[], resortFeat:[], gearDraft:null, gearFilter:'owned', gearSport:'snowboard', vTrip:null, vResort:null, vGear:null },
+  cost:{ members:4, nights:3, trans:12000, lodge:9000, lift:8000, food:3000 }
 };
+var TITLES = { trips:'遠征プランナー', resorts:'お気に入りゲレンデ', cost:'費用シミュレーター', gear:'ギア管理' };
 
-// ===== ローカルストレージ =====
-function saveAll() {
-  localStorage.setItem('snb-planner-v3', JSON.stringify({ data: state.data, apiKey: state.apiKey, costCalc: state.costCalc }));
-}
-function loadAll() {
+// ===== STORAGE =====
+function save() { try { localStorage.setItem('snb-v4', JSON.stringify({data:S.data,cost:S.cost})); } catch(e){} }
+function load() {
   try {
-    var s = JSON.parse(localStorage.getItem('snb-planner-v3') || '{}');
-    if (s.data) state.data = s.data;
-    if (!state.data.gear) state.data.gear = [];
-    if (s.apiKey) state.apiKey = s.apiKey;
-    if (s.costCalc) state.costCalc = s.costCalc;
+    var d = JSON.parse(localStorage.getItem('snb-v4') || localStorage.getItem('snb-planner-v3') || '{}');
+    if (d.data) { S.data = d.data; if (!S.data.gear) S.data.gear = []; if (!S.data.resorts) S.data.resorts = []; if (!S.data.trips) S.data.trips = []; }
+    if (d.cost) S.cost = d.cost;
+    if (d.costCalc) S.cost = d.costCalc;
   } catch(e) {}
 }
 
-// ===== ナビゲーション =====
-function navigate(screen, title, backLabel, showRight, rightLabel) {
-  state.navStack.push({ screen: state.screen, tab: state.tab, title: document.getElementById('nav-title').textContent });
-  state.screen = screen;
-  setNavBar(title, backLabel || '戻る', showRight, rightLabel);
+// ===== NAV =====
+function nav(screen, title, back, showRight, rightLbl) {
+  S.stack.push({ screen:S.screen, title:document.getElementById('nt').textContent });
+  S.screen = screen;
+  nb(title, back||'戻る', true, showRight, rightLbl||'保存');
   render();
 }
-
 function goBack() {
-  if (state.navStack.length === 0) return;
-  var prev = state.navStack.pop();
-  state.screen = prev.screen;
-  if (state.navStack.length === 0) {
-    setNavBar(tabTitles[state.tab], '', false);
-  } else {
-    var prevPrev = state.navStack[state.navStack.length - 1];
-    setNavBar(prev.title, prevPrev.title, true);
-  }
+  if (!S.stack.length) return;
+  var p = S.stack.pop();
+  S.screen = p.screen;
+  if (!S.stack.length) nb(TITLES[S.tab],'',false,false);
+  else nb(p.title, S.stack[S.stack.length-1].title, true, false);
+  render();
+}
+function nb(title, backLbl, showBack, showRight, rightLbl) {
+  document.getElementById('nt').textContent = title||'';
+  var bb=document.getElementById('bb'), rb=document.getElementById('rb');
+  bb.style.visibility = showBack?'visible':'hidden'; bb.textContent = backLbl||'戻る';
+  rb.style.visibility = showRight?'visible':'hidden'; rb.textContent = rightLbl||'保存';
+}
+function navRight() {
+  if (S.screen==='trip-add')    saveTrip();
+  else if (S.screen==='resort-add')  saveResort();
+  else if (S.screen==='gear-add')    saveGear();
+}
+function sw(tab) {
+  S.tab=tab; S.screen='main'; S.stack=[];
+  document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('on');});
+  document.getElementById('tab-'+tab).classList.add('on');
+  nb(TITLES[tab],'',false,false);
   render();
 }
 
-function setNavBar(title, backLabel, showBack, showRight, rightLabel) {
-  document.getElementById('nav-title').textContent = title || '';
-  var backBtn = document.getElementById('nav-back-btn');
-  var rightBtn = document.getElementById('nav-right-btn');
-  if (showBack) { backBtn.style.visibility = 'visible'; backBtn.textContent = backLabel || '戻る'; }
-  else { backBtn.style.visibility = 'hidden'; }
-  if (showRight) { rightBtn.style.visibility = 'visible'; rightBtn.textContent = rightLabel || '完了'; }
-  else { rightBtn.style.visibility = 'hidden'; }
-}
-
-var tabTitles = { trips: '遠征プランナー', resorts: 'お気に入りゲレンデ', cost: '費用シミュレーター', ai: 'AI相談', gear: 'ギア管理' };
-
-function switchTab(tab) {
-  state.tab = tab;
-  state.screen = 'main';
-  state.navStack = [];
-  document.querySelectorAll('.tab-item').forEach(function(t) { t.classList.remove('active'); });
-  document.getElementById('tab-' + tab).classList.add('active');
-  setNavBar(tabTitles[tab], '', false, false);
-  render();
-}
-
-function navRightAction() {
-  if (state.screen === 'trip-add') saveTrip();
-  if (state.screen === 'resort-add-input') aiSearchResort();
-}
-
-// ===== レンダリングのディスパッチ =====
+// ===== RENDER =====
 function render() {
-  var el = document.getElementById('content-inner');
-  if (state.screen === 'main') {
-    if (state.tab === 'trips') el.innerHTML = renderTripsMain();
-    else if (state.tab === 'resorts') el.innerHTML = renderResortsMain();
-    else if (state.tab === 'cost') el.innerHTML = renderCost();
-    else if (state.tab === 'ai') el.innerHTML = renderAI();
-    else if (state.tab === 'gear') el.innerHTML = renderGearMain();
-  } else if (state.screen === 'trip-add') el.innerHTML = renderTripAdd();
-  else if (state.screen === 'trip-detail') el.innerHTML = renderTripDetail();
-  else if (state.screen === 'resort-detail') el.innerHTML = renderResortDetail();
-  else if (state.screen === 'resort-add-input') el.innerHTML = renderResortAddInput();
-  else if (state.screen === 'resort-ai-confirm') el.innerHTML = renderResortAIConfirm();
-  else if (state.screen === 'apikey') el.innerHTML = renderApiKeyScreen();
-  else if (state.screen === 'gear-add') el.innerHTML = renderGearAdd();
-  else if (state.screen === 'gear-detail') el.innerHTML = renderGearDetail();
-  document.getElementById('content').scrollTop = 0;
-  if (state.tab === 'cost') bindCostInputs();
-  if (state.tab === 'ai' && state.screen === 'main') scrollChatToBottom();
+  var h = '';
+  if (S.screen==='main') {
+    if (S.tab==='trips')   h=rTrips();
+    else if (S.tab==='resorts') h=rResorts();
+    else if (S.tab==='cost')    h=rCost();
+    else if (S.tab==='gear')    h=rGear();
+  } else if (S.screen==='trip-add')     h=rTripAdd();
+  else if (S.screen==='trip-detail')    h=rTripDetail();
+  else if (S.screen==='resort-add')     h=rResortAdd();
+  else if (S.screen==='resort-detail')  h=rResortDetail();
+  else if (S.screen==='gear-add')       h=rGearAdd();
+  else if (S.screen==='gear-detail')    h=rGearDetail();
+  document.getElementById('ci').innerHTML = h;
+  document.getElementById('ct').scrollTop = 0;
 }
 
-// ===== APIキーチェック =====
-function checkApiKey(cb) {
-  if (state.apiKey) { cb(); return; }
-  state._pendingCb = cb;
-  navigate('apikey', 'APIキー設定', '戻る', false);
-}
+function e(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function st(id,msg,type){ var el=document.getElementById(id); if(!el)return; el.style.color=type==='err'?'var(--red)':'var(--green)'; el.textContent=msg; setTimeout(function(){if(el)el.textContent='';},3000); }
+function gv(id){ var el=document.getElementById(id); return el?el.value.trim():''; }
+function lr(icon,bg,title,sub,oc){ return '<div class="lr" onclick="'+oc+'"><div class="li" style="background:'+bg+'">'+icon+'</div><div class="lb"><div class="lt">'+e(title)+'</div>'+(sub?'<div class="ls">'+e(sub)+'</div>':'')+'</div><span class="cv">›</span></div>'; }
+function nights(s,en){ if(!s||!en)return''; var d=Math.round((new Date(en)-new Date(s))/86400000); return d>0?d+'泊'+(d+1)+'日':''; }
+function openUrl(url){ window.open(url,'_blank'); }
 
-function renderApiKeyScreen() {
-  return '<div class="apikey-banner">'
-    + '<div class="apikey-banner-title">⚠️ Gemini APIキーが必要です</div>'
-    + '<div class="apikey-banner-text">AI機能を使うにはGoogle Gemini APIキーを設定してください。キーはこのデバイスのローカルストレージのみに保存されます。</div>'
-    + '<div class="apikey-input-row"><input id="apikey-input" type="password" placeholder="AIza..." value="' + (state.apiKey || '') + '">'
-    + '<button onclick="saveApiKey()">保存</button></div>'
-    + '</div>';
-}
-
-function saveApiKey() {
-  var val = document.getElementById('apikey-input').value.trim();
-  if (!val) return;
-  state.apiKey = val;
-  saveAll();
-  goBack();
-  if (state._pendingCb) { var cb = state._pendingCb; state._pendingCb = null; cb(); }
-}
-
-// ===== 遠征タブ =====
-function renderTripsMain() {
-  var html = '';
-
-  // APIキー設定バナー（未設定時のみ）
-  if (!state.apiKey) {
-    html += '<div style="margin:16px;background:#fff3cd;border-radius:12px;padding:12px 14px;cursor:pointer" onclick="navigate(\'apikey\',\'APIキー設定\',\'戻る\')">'
-      + '<div style="font-size:14px;font-weight:600;color:#856404">⚙️ Gemini APIキーを設定するとAI機能が使えます</div>'
-      + '<div style="font-size:12px;color:#856404;margin-top:3px">タップして設定 →</div></div>';
-  }
-
-  // 遠征リスト
-  html += '<div class="list-section"><div class="list-header">登録済み遠征</div>';
-  if (!state.data.trips.length) {
-    html += '<div class="list-group"><div class="empty-state"><div class="empty-icon">🗓</div><div class="empty-title">遠征がありません</div><div class="empty-sub">下のボタンから追加しよう</div></div></div>';
+// ===================================================
+// 遠征
+// ===================================================
+function rTrips() {
+  var h='<div class="sec"><div class="sh">登録済み遠征</div>';
+  if (!S.data.trips.length) {
+    h+='<div class="lg"><div class="empty"><div class="eico">🗓</div><div class="etit">遠征がありません</div><div class="esub">追加ボタンから登録しよう</div></div></div>';
   } else {
-    html += '<div class="list-group">';
-    state.data.trips.forEach(function(t) {
-      var nights = '';
-      if (t.start && t.end) {
-        var d = Math.round((new Date(t.end) - new Date(t.start)) / 86400000);
-        nights = d + '泊' + (d + 1) + '日';
-      }
-      var resort = state.data.resorts.find(function(r) { return r.id == t.resortId; });
-      var sub = (resort ? resort.name : (t.resortName || 'ゲレンデ未定'))
-        + (nights ? ' · ' + nights : '')
-        + (t.members && t.members.length ? ' · ' + t.members.length + '人' : '');
-      html += '<div class="list-row" onclick="openTripDetail(' + t.id + ')">'
-        + '<div class="list-row-icon icon-blue" style="font-size:15px">🗓</div>'
-        + '<div class="list-row-body"><div class="list-row-title">' + esc(t.name) + '</div>'
-        + '<div class="list-row-sub">' + esc(sub) + '</div></div>'
-        + '<span class="chevron">›</span></div>';
+    h+='<div class="lg">';
+    S.data.trips.forEach(function(t){
+      var r=S.data.resorts.find(function(x){return x.id==t.resortId;});
+      var sub=(r?r.name:(t.resortName||'ゲレンデ未定'))+(nights(t.start,t.end)?' · '+nights(t.start,t.end):'')+(t.members&&t.members.length?' · '+t.members.length+'人':'');
+      h+=lr('🗓','#0a1628',t.name,sub,'openTripDetail('+t.id+')');
     });
-    html += '</div>';
+    h+='</div>';
   }
-  html += '</div>';
-
-  // 追加ボタン
-  html += '<div class="spacer-sm"></div>';
-  html += '<button class="ios-btn btn-primary" onclick="openTripAdd()">＋ 新しい遠征を追加</button>';
-  return html;
+  return h+'</div><div class="sm-gap"></div><button class="btn bp" onclick="openTripAdd()">＋ 新しい遠征を追加</button>';
 }
 
-function openTripAdd() {
-  state.temp.tripMembers = [];
-  state.temp.editTripId = null;
-  navigate('trip-add', '新しい遠征', '遠征', true, '保存');
+function openTripAdd(){ S.tmp.tripMem=[]; nav('trip-add','新しい遠征','遠征',true,'保存'); }
+
+function rTripAdd() {
+  var opts='<option value="">未選択</option>';
+  S.data.resorts.forEach(function(r){ opts+='<option value="'+r.id+'">'+e(r.name)+'</option>'; });
+  var chips=S.tmp.tripMem.length
+    ? S.tmp.tripMem.map(function(m,i){return'<span class="chip">'+e(m)+'<span class="cdel" onclick="rmTM('+i+')">×</span></span>';}).join('')
+    : '<span class="ce">まだいません</span>';
+  return '<div class="fs" style="margin-top:16px"><div class="sh">遠征情報</div><div class="fg">'
+    +'<div class="fr"><span class="fl">遠征名</span><input id="f-name" type="text" placeholder="例：白馬遠征" style="text-align:right"></div>'
+    +'<div class="fr"><span class="fl">ゲレンデ</span><select id="f-resort">'+opts+'</select></div>'
+    +'<div class="fr"><span class="fl">出発日</span><input id="f-start" type="date"></div>'
+    +'<div class="fr"><span class="fl">帰着日</span><input id="f-end" type="date"></div>'
+    +'<div class="fr"><span class="fl">予算/人</span><input id="f-budget" type="number" placeholder="60000" style="text-align:right"><span class="fu">円</span></div>'
+    +'</div></div>'
+    +'<div class="fs" style="margin-top:12px"><div class="sh">メンバー</div><div class="fg">'
+    +'<div class="cw" id="tm-chips">'+chips+'</div>'
+    +'<div class="fr" style="border-top:0.5px solid var(--sep)"><input id="f-mem" type="text" placeholder="名前を入力..." style="flex:1;text-align:left"><button onclick="addTM()" style="background:var(--blue);color:#fff;border:none;border-radius:8px;padding:7px 14px;font-size:14px;font-family:inherit;cursor:pointer">追加</button></div>'
+    +'</div></div><div class="status" id="ts"></div>';
 }
 
-function renderTripAdd() {
-  // ゲレンデ選択肢
-  var resortOpts = '<option value="">未選択</option>';
-  state.data.resorts.forEach(function(r) {
-    resortOpts += '<option value="' + r.id + '">' + esc(r.name) + '</option>';
+function addTM(){ var inp=document.getElementById('f-mem');if(!inp)return;var n=inp.value.trim();if(!n)return;S.tmp.tripMem.push(n);inp.value='';rfTM(); }
+function rmTM(i){ S.tmp.tripMem.splice(i,1);rfTM(); }
+function rfTM(){ var el=document.getElementById('tm-chips');if(!el)return;el.innerHTML=S.tmp.tripMem.length?S.tmp.tripMem.map(function(m,i){return'<span class="chip">'+e(m)+'<span class="cdel" onclick="rmTM('+i+')">×</span></span>';}).join(''):'<span class="ce">まだいません</span>'; }
+
+function saveTrip(){
+  var name=gv('f-name');if(!name){st('ts','遠征名を入力してください','err');return;}
+  var rid=gv('f-resort'),r=S.data.resorts.find(function(x){return x.id==rid;});
+  S.data.trips.push({id:Date.now(),name:name,resortId:rid,resortName:r?r.name:'',start:gv('f-start'),end:gv('f-end'),budget:parseInt(gv('f-budget'))||0,members:S.tmp.tripMem.slice()});
+  save(); goBack();
+}
+
+function openTripDetail(id){ S.tmp.vTrip=id;var t=S.data.trips.find(function(x){return x.id==id;});nav('trip-detail',t?t.name:'遠征詳細','遠征',false); }
+
+function rTripDetail(){
+  var t=S.data.trips.find(function(x){return x.id==S.tmp.vTrip;});
+  if(!t)return'<div class="empty">データなし</div>';
+  var r=S.data.resorts.find(function(x){return x.id==t.resortId;});
+  var ni=nights(t.start,t.end);
+  var sched='';
+  if(t.start&&t.end){
+    var s=new Date(t.start),en=new Date(t.end),nd=Math.round((en-s)/86400000),wd=['日','月','火','水','木','金','土'];
+    for(var i=0;i<=nd;i++){var d=new Date(s);d.setDate(d.getDate()+i);var lbl=(d.getMonth()+1)+'/'+d.getDate();var w=wd[d.getDay()];var tit=i===0?'移動日（出発）':i===nd?'帰宅日（移動）':(r?r.name+'　滑走':'滑走');var su=i===0?'新宿 → '+(r?r.name:'現地'):i===nd?'現地 → 帰宅':'終日滑走';sched+='<div class="schr"><div class="schd"><div class="schdd">'+lbl+'</div><div class="schdw">('+w+')</div></div><div class="schb"><div class="scht">'+tit+'</div><div class="schs">'+su+'</div></div></div>';}
+  }
+  var mems=(t.members&&t.members.length)?t.members.map(function(m){return'<span class="mc">'+e(m)+'</span>';}).join(''):'<span class="ce" style="padding:4px 0">未設定</span>';
+  return '<div class="hc"><div class="hn">'+e(t.name)+'</div>'
+    +'<div class="hsub">'+e(r?r.name:(t.resortName||'ゲレンデ未定'))+(ni?' · '+ni:'')+'</div>'
+    +'<div class="hstats"><div class="hst"><div class="hstv">'+(t.members?t.members.length:0)+'人</div><div class="hstl">メンバー</div></div>'
+    +'<div class="hst"><div class="hstv">'+(t.budget?'¥'+Math.round(t.budget/1000)+'k':'—')+'</div><div class="hstl">一人予算</div></div>'
+    +'<div class="hst"><div class="hstv">'+(ni||'—')+'</div><div class="hstl">日程</div></div></div></div>'
+    +(sched?'<div class="sec"><div class="sh">日程</div><div class="schl">'+sched+'</div></div>':'')
+    +'<div class="sec"><div class="sh">メンバー</div><div class="lg"><div style="padding:10px 12px;display:flex;flex-wrap:wrap">'+mems+'</div></div></div>'
+    +(r?'<div class="sec"><div class="sh">ゲレンデ</div><div class="lg">'+lr('⛷️','#0a1628',r.name,r.area||'','openResortFromTrip('+r.id+')')+'</div></div>':'')
+    +'<button class="btn bd" onclick="delTrip('+t.id+')">この遠征を削除</button>';
+}
+
+function openResortFromTrip(id){ S.tmp.vResort=id;var r=S.data.resorts.find(function(x){return x.id==id;});nav('resort-detail',r?r.name:'ゲレンデ詳細','戻る',false); }
+function delTrip(id){ if(!confirm('削除しますか？'))return;S.data.trips=S.data.trips.filter(function(t){return t.id!=id;});save();goBack(); }
+
+// ===================================================
+// ゲレンデ
+// ===================================================
+function rResorts(){
+  var h='<div class="sec"><div class="sh">お気に入りゲレンデ</div>';
+  if(!S.data.resorts.length){
+    h+='<div class="lg"><div class="empty"><div class="eico">⛷️</div><div class="etit">ゲレンデがありません</div><div class="esub">追加ボタンから登録しよう</div></div></div>';
+  } else {
+    h+='<div class="lg">';
+    S.data.resorts.forEach(function(r){
+      var sub=(r.area||'')+(r.altitude_top?' · '+r.altitude_top:'')+(r.courses?' · '+r.courses:'');
+      h+=lr('⛷️','#0a1628',r.name,sub,'openResortDetail('+r.id+')');
+    });
+    h+='</div>';
+  }
+  return h+'</div><div class="sm-gap"></div><button class="btn bp" onclick="openResortAdd()">＋ ゲレンデを登録</button>';
+}
+
+function openResortAdd(){ S.tmp.resortFeat=[]; nav('resort-add','ゲレンデを登録','ゲレンデ',true,'保存'); }
+
+function rResortAdd(){
+  var chips=S.tmp.resortFeat.length
+    ? S.tmp.resortFeat.map(function(f,i){return'<span class="chip">'+e(f)+'<span class="cdel" onclick="rmFeat('+i+')">×</span></span>';}).join('')
+    : '<span class="ce">未設定</span>';
+  return '<div class="fs" style="margin-top:16px"><div class="sh">基本情報</div><div class="fg">'
+    +fr2('r-name',   'ゲレンデ名','text','例：白馬八方尾根')
+    +fr2('r-area',   '都道府県',  'text','例：長野県')
+    +fr2('r-region', '地域',      'text','例：白馬エリア')
+    +fr2('r-url',    '公式サイト','url', 'https://')
+    +'</div></div>'
+    +'<div class="fs" style="margin-top:12px"><div class="sh">営業情報</div><div class="fg">'
+    +fr2('r-season','営業期間','text','例：12月上旬〜3月下旬')
+    +fr2('r-hours', '営業時間','text','例：8:30〜16:30')
+    +fr2('r-night', 'ナイター', 'text','例：〜20:00（土日のみ）')
+    +'</div></div>'
+    +'<div class="fs" style="margin-top:12px"><div class="sh">コース情報</div><div class="fg">'
+    +fr2('r-courses','コース数',  'text','例：47本')
+    +fr2('r-lifts',  'リフト数',  'text','例：20本')
+    +fr2('r-alt-top','最高標高',  'text','例：1,831m')
+    +fr2('r-alt-base','麓標高',   'text','例：760m')
+    +fr2('r-level',  '対象レベル','text','例：初〜上級')
+    +'</div></div>'
+    +'<div class="fs" style="margin-top:12px"><div class="sh">特徴タグ</div><div class="fg">'
+    +'<div class="cw" id="feat-chips">'+chips+'</div>'
+    +'<div class="fr" style="border-top:0.5px solid var(--sep)"><input id="f-feat" type="text" placeholder="例：パウダー / オフピステ" style="flex:1;text-align:left"><button onclick="addFeat()" style="background:var(--blue);color:#fff;border:none;border-radius:8px;padding:7px 14px;font-size:14px;font-family:inherit;cursor:pointer">追加</button></div>'
+    +'</div></div>'
+    +'<div class="fs" style="margin-top:12px"><div class="sh">メモ</div><div class="fg"><div class="fr"><textarea id="r-memo" placeholder="アクセス・おすすめポイントなど..."></textarea></div></div></div>'
+    +'<div class="status" id="rs"></div>';
+}
+
+function fr2(id,label,type,ph){ return '<div class="fr"><span class="fl sm">'+label+'</span><input id="'+id+'" type="'+type+'" placeholder="'+ph+'" style="text-align:right"></div>'; }
+
+function addFeat(){ var inp=document.getElementById('f-feat');if(!inp)return;var v=inp.value.trim();if(!v)return;S.tmp.resortFeat.push(v);inp.value='';rfFeat(); }
+function rmFeat(i){ S.tmp.resortFeat.splice(i,1);rfFeat(); }
+function rfFeat(){ var el=document.getElementById('feat-chips');if(!el)return;el.innerHTML=S.tmp.resortFeat.length?S.tmp.resortFeat.map(function(f,i){return'<span class="chip">'+e(f)+'<span class="cdel" onclick="rmFeat('+i+')">×</span></span>';}).join(''):'<span class="ce">未設定</span>'; }
+
+function saveResort(){
+  var name=gv('r-name');if(!name){st('rs','ゲレンデ名を入力してください','err');return;}
+  S.data.resorts.push({
+    id:Date.now(),name:name,
+    area:gv('r-area'),region:gv('r-region'),url:gv('r-url'),
+    season:gv('r-season'),hours:gv('r-hours'),night:gv('r-night'),
+    courses:gv('r-courses'),lifts:gv('r-lifts'),altitude_top:gv('r-alt-top'),altitude_base:gv('r-alt-base'),level:gv('r-level'),
+    memo:gv('r-memo'),features:S.tmp.resortFeat.slice()
   });
+  save();S.tmp.resortFeat=[];goBack();
+}
 
-  var chipsHtml = '';
-  if (!state.temp.tripMembers.length) {
-    chipsHtml = '<span class="chip-empty">まだいません</span>';
+function openResortDetail(id){ S.tmp.vResort=id;var r=S.data.resorts.find(function(x){return x.id==id;});nav('resort-detail',r?r.name:'ゲレンデ詳細','ゲレンデ',false); }
+
+function rResortDetail(){
+  var r=S.data.resorts.find(function(x){return x.id==S.tmp.vResort;});
+  if(!r)return'<div class="empty">データなし</div>';
+  var feats=(r.features||[]).map(function(f){return'<span class="htag">'+e(f)+'</span>';}).join('');
+  var h='<div class="hc" style="margin-top:16px"><div class="hn">'+e(r.name)+'</div>'
+    +'<div class="hsub">'+e((r.area||'')+(r.region?' · '+r.region:''))+'</div>'
+    +(feats?'<div class="htags">'+feats+'</div>':'')
+    +'<div class="hstats">'
+    +'<div class="hst"><div class="hstv">'+e(r.courses||'—')+'</div><div class="hstl">コース数</div></div>'
+    +'<div class="hst"><div class="hstv">'+e(r.lifts||'—')+'</div><div class="hstl">リフト数</div></div>'
+    +'<div class="hst"><div class="hstv">'+e(r.altitude_top||'—')+'</div><div class="hstl">最高標高</div></div>'
+    +'</div>'
+    +(r.url?'<div class="hurl" onclick="openUrl(\''+e(r.url)+'\')"><span>🔗 '+e(r.url)+'</span><span style="color:rgba(255,255,255,0.6)">›</span></div>':'')
+    +'</div>';
+
+  // 営業情報
+  var opRows='';
+  if(r.season) opRows+=ir('営業期間',r.season);
+  if(r.hours)  opRows+=ir('営業時間',r.hours);
+  if(r.night)  opRows+=ir('ナイター', r.night);
+  if(!opRows)  opRows+=ir('営業情報','未設定');
+  h+='<div class="sec"><div class="sh">営業情報</div><div class="is" style="margin:0">'+opRows+'</div></div>';
+
+  // コース情報
+  var crRows='';
+  if(r.courses)       crRows+=ir('コース数',  r.courses);
+  if(r.lifts)         crRows+=ir('リフト数',  r.lifts);
+  if(r.altitude_top)  crRows+=ir('最高標高',  r.altitude_top);
+  if(r.altitude_base) crRows+=ir('麓標高',    r.altitude_base);
+  if(r.level)         crRows+=ir('対象レベル',r.level);
+  if(!crRows)         crRows+=ir('コース情報','未設定');
+  h+='<div class="sec"><div class="sh">コース情報</div><div class="is" style="margin:0">'+crRows+'</div></div>';
+
+  // メモ
+  if(r.memo) h+='<div class="sec"><div class="sh">メモ</div><div class="lg"><div style="padding:12px 16px;font-size:15px;line-height:1.6">'+e(r.memo)+'</div></div></div>';
+
+  // 遠征に設定
+  h+='<div class="sec"><div class="sh">この遠征に設定する</div><div class="lg">';
+  if(!S.data.trips.length){
+    h+='<div class="lr"><div class="lb"><div class="lt" style="color:var(--text3)">遠征が登録されていません</div></div></div>';
   } else {
-    state.temp.tripMembers.forEach(function(m, i) {
-      chipsHtml += '<span class="chip">' + esc(m) + '<span class="chip-del" onclick="removeMember(' + i + ')">×</span></span>';
+    S.data.trips.forEach(function(t){
+      var isSet=t.resortId==r.id;
+      h+='<div class="lr" onclick="setRT('+r.id+','+t.id+')">'
+        +'<div class="lb"><div class="lt">'+e(t.name)+'</div></div>'
+        +'<span style="font-size:14px;color:'+(isSet?'var(--green)':'var(--blue)')+';font-weight:500">'+(isSet?'✓ 設定済み':'設定する')+'</span></div>';
     });
   }
-
-  return '<div class="form-section" style="margin-top:16px">'
-    + '<div class="list-header">遠征の情報</div>'
-    + '<div class="form-group">'
-    + '<div class="form-row"><span class="form-label">遠征名</span><input id="f-name" type="text" placeholder="例：白馬遠征" style="text-align:right"></div>'
-    + '<div class="form-row"><span class="form-label">ゲレンデ</span><select id="f-resort">' + resortOpts + '</select></div>'
-    + '<div class="form-row"><span class="form-label">出発日</span><input id="f-start" type="date"></div>'
-    + '<div class="form-row"><span class="form-label">帰着日</span><input id="f-end" type="date"></div>'
-    + '<div class="form-row"><span class="form-label">予算/人</span><input id="f-budget" type="number" placeholder="60000" style="text-align:right"><span class="form-unit">円</span></div>'
-    + '</div></div>'
-    + '<div class="form-section" style="margin-top:12px">'
-    + '<div class="list-header">メンバー</div>'
-    + '<div class="form-group">'
-    + '<div class="chips-wrap" id="chips-wrap">' + chipsHtml + '</div>'
-    + '<div class="form-row" style="border-top:0.5px solid var(--separator)">'
-    + '<input id="f-member" type="text" placeholder="名前を入力..." style="flex:1;text-align:left;min-height:44px">'
-    + '<button onclick="addMember()" style="background:var(--blue);color:#fff;border:none;border-radius:8px;padding:7px 14px;font-size:14px;font-family:inherit;cursor:pointer;white-space:nowrap">追加</button>'
-    + '</div></div></div>'
-    + '<div class="status-msg" id="trip-status"></div>';
+  h+='</div></div>';
+  h+='<button class="btn bd" onclick="delResort('+r.id+')">登録を削除</button>';
+  return h;
 }
 
-function addMember() {
-  var inp = document.getElementById('f-member');
-  var name = inp.value.trim();
-  if (!name) return;
-  state.temp.tripMembers.push(name);
-  inp.value = '';
-  var chipsWrap = document.getElementById('chips-wrap');
-  if (chipsWrap) chipsWrap.innerHTML = state.temp.tripMembers.map(function(m, i) {
-    return '<span class="chip">' + esc(m) + '<span class="chip-del" onclick="removeMember(' + i + ')">×</span></span>';
-  }).join('');
+function ir(k,v){ return '<div class="ir"><span class="ik">'+e(k)+'</span><span class="iv">'+e(v)+'</span></div>'; }
+function setRT(rid,tid){
+  var t=S.data.trips.find(function(x){return x.id==tid;}),r=S.data.resorts.find(function(x){return x.id==rid;});
+  if(!t||!r)return; t.resortId=rid; t.resortName=r.name; save(); render();
+}
+function delResort(id){
+  if(!confirm('削除しますか？'))return;
+  S.data.resorts=S.data.resorts.filter(function(r){return r.id!=id;});
+  S.data.trips.forEach(function(t){if(t.resortId==id){t.resortId='';t.resortName='';}});
+  save();goBack();
 }
 
-function removeMember(i) {
-  state.temp.tripMembers.splice(i, 1);
-  var chipsWrap = document.getElementById('chips-wrap');
-  if (chipsWrap) {
-    if (!state.temp.tripMembers.length) { chipsWrap.innerHTML = '<span class="chip-empty">まだいません</span>'; return; }
-    chipsWrap.innerHTML = state.temp.tripMembers.map(function(m, j) {
-      return '<span class="chip">' + esc(m) + '<span class="chip-del" onclick="removeMember(' + j + ')">×</span></span>';
-    }).join('');
-  }
+// ===================================================
+// 費用
+// ===================================================
+function rCost(){
+  var c=S.cost, lo=c.lodge*c.nights, li=c.lift*c.nights, fo=c.food*(c.nights+1), per=c.trans+lo+li+fo, mx=Math.max(c.trans,lo,li,fo,1);
+  return '<div class="fs" style="margin-top:16px"><div class="sh">入力</div><div class="fg">'
+    +cr('c-members','人数','number',c.members,'人')+cr('c-nights','泊数','number',c.nights,'泊')
+    +cr('c-trans','交通費','number',c.trans,'円/人')+cr('c-lodge','宿泊','number',c.lodge,'円/泊')
+    +cr('c-lift','リフト券','number',c.lift,'円/日')+cr('c-food','食費','number',c.food,'円/日')
+    +'</div></div>'
+    +'<div class="fs" style="margin-top:12px"><div class="sh">内訳（一人）</div><div class="lg">'
+    +cb('🚌 交通費',c.trans,mx,'#007aff')+cb('🏠 宿泊（'+c.nights+'泊）',lo,mx,'#5856d6')
+    +cb('🎫 リフト券（'+c.nights+'日）',li,mx,'#34c759')+cb('🍜 食費（'+(c.nights+1)+'日）',fo,mx,'#ff9500')
+    +'</div></div>'
+    +'<div class="fs" style="margin-top:12px"><div class="sh">合計</div><div class="lg">'
+    +'<div class="fr"><span class="fl">一人当たり</span><span style="font-size:20px;font-weight:600">¥'+per.toLocaleString()+'</span></div>'
+    +'<div class="fr"><span class="fl">'+c.members+'人合計</span><span style="font-size:17px;font-weight:500">¥'+(per*c.members).toLocaleString()+'</span></div>'
+    +'</div></div>';
+}
+function cr(id,lbl,type,val,unit){ return '<div class="fr"><span class="fl">'+lbl+'</span><input id="'+id+'" type="'+type+'" value="'+val+'" oninput="updCost()" style="text-align:right"><span class="fu">'+unit+'</span></div>'; }
+function cb(lbl,val,mx,col){ var p=Math.round(val/mx*92); return '<div class="cbr"><div class="cbl"><span class="cbn">'+lbl+'</span><span class="cbv">¥'+val.toLocaleString()+'</span></div><div class="cbb"><div class="cbf" style="width:'+p+'%;background:'+col+'"></div></div></div>'; }
+function updCost(){
+  S.cost={members:parseInt(document.getElementById('c-members').value)||4,nights:parseInt(document.getElementById('c-nights').value)||3,trans:parseInt(document.getElementById('c-trans').value)||0,lodge:parseInt(document.getElementById('c-lodge').value)||0,lift:parseInt(document.getElementById('c-lift').value)||0,food:parseInt(document.getElementById('c-food').value)||0};
+  save(); document.getElementById('ci').innerHTML=rCost();
 }
 
-function saveTrip() {
-  var name = (document.getElementById('f-name') || {}).value || '';
-  name = name.trim();
-  if (!name) { showStatus('trip-status', '遠征名を入力してください', 'error'); return; }
-  var resortId = (document.getElementById('f-resort') || {}).value || '';
-  var resort = state.data.resorts.find(function(r) { return r.id == resortId; });
-  var trip = {
-    id: Date.now(),
-    name: name,
-    resortId: resortId,
-    resortName: resort ? resort.name : '',
-    start: (document.getElementById('f-start') || {}).value || '',
-    end: (document.getElementById('f-end') || {}).value || '',
-    budget: parseInt((document.getElementById('f-budget') || {}).value) || 0,
-    members: state.temp.tripMembers.slice()
-  };
-  state.data.trips.push(trip);
-  saveAll();
-  goBack();
-}
-
-function openTripDetail(id) {
-  state.temp.viewTripId = id;
-  var t = state.data.trips.find(function(x) { return x.id == id; });
-  navigate('trip-detail', t ? t.name : '遠征詳細', '遠征', false);
-}
-
-function renderTripDetail() {
-  var t = state.data.trips.find(function(x) { return x.id == state.temp.viewTripId; });
-  if (!t) return '<div class="empty-state">データが見つかりません</div>';
-  var resort = state.data.resorts.find(function(r) { return r.id == t.resortId; });
-  var nights = '';
-  var scheduleRows = '';
-  if (t.start && t.end) {
-    var startD = new Date(t.start);
-    var endD = new Date(t.end);
-    var nDays = Math.round((endD - startD) / 86400000);
-    nights = nDays + '泊' + (nDays + 1) + '日';
-    var weekdays = ['日','月','火','水','木','金','土'];
-    for (var i = 0; i <= nDays; i++) {
-      var d = new Date(startD); d.setDate(d.getDate() + i);
-      var label = (d.getMonth()+1) + '/' + d.getDate();
-      var w = weekdays[d.getDay()];
-      var title = i === 0 ? '移動日（出発）' : i === nDays ? '帰宅日（移動）' : (resort ? resort.name + '　滑走' : '滑走');
-      var sub = i === 0 ? '新宿 → ' + (resort ? resort.name : '現地') : i === nDays ? '現地 → 帰宅' : '終日滑走';
-      scheduleRows += '<div class="schedule-row">'
-        + '<div class="schedule-date"><div class="schedule-date-d">' + label + '</div><div class="schedule-date-w">(' + w + ')</div></div>'
-        + '<div class="schedule-body"><div class="schedule-title">' + title + '</div><div class="schedule-sub">' + sub + '</div></div></div>';
-    }
-  }
-
-  var membersHtml = '';
-  if (t.members && t.members.length) {
-    t.members.forEach(function(m) {
-      membersHtml += '<span class="chip" style="margin:3px">' + esc(m) + '</span>';
-    });
-  } else {
-    membersHtml = '<span class="chip-empty" style="padding:4px 0">未設定</span>';
-  }
-
-  return '<div class="hero-card">'
-    + '<div class="hero-name">' + esc(t.name) + '</div>'
-    + '<div class="hero-sub">' + esc(resort ? resort.name : (t.resortName || 'ゲレンデ未定')) + (nights ? ' · ' + nights : '') + '</div>'
-    + '<div class="hero-stats">'
-    + '<div class="hero-stat"><div class="hstat-v">' + (t.members ? t.members.length : 0) + '人</div><div class="hstat-l">メンバー</div></div>'
-    + '<div class="hero-stat"><div class="hstat-v">' + (t.budget ? '¥' + Math.round(t.budget / 1000) + 'k' : '—') + '</div><div class="hstat-l">一人予算</div></div>'
-    + '<div class="hero-stat"><div class="hstat-v">' + (nights || '—') + '</div><div class="hstat-l">日程</div></div>'
-    + '</div></div>'
-
-    + (scheduleRows ? '<div class="list-section"><div class="list-header">日程</div><div class="schedule-list">' + scheduleRows + '</div></div>' : '')
-
-    + '<div class="list-section"><div class="list-header">メンバー</div>'
-    + '<div class="list-group"><div class="chips-wrap">' + membersHtml + '</div></div></div>'
-
-    + (resort ? '<div class="list-section"><div class="list-header">ゲレンデ情報</div>'
-      + '<div class="list-group"><div class="list-row" onclick="openResortDetailFromTrip(\'' + resort.id + '\')">'
-      + '<div class="list-row-icon icon-blue" style="font-size:15px">⛷️</div>'
-      + '<div class="list-row-body"><div class="list-row-title">' + esc(resort.name) + '</div>'
-      + '<div class="list-row-sub">' + esc((resort.altitude_top || '') + (resort.courses ? ' · ' + resort.courses : '')) + '</div></div>'
-      + '<span class="chevron">›</span></div></div></div>' : '')
-
-    + '<button class="ios-btn btn-danger" onclick="deleteTrip(' + t.id + ')">この遠征を削除</button>';
-}
-
-function openResortDetailFromTrip(id) {
-  state.temp.viewResortId = id;
-  var r = state.data.resorts.find(function(x) { return x.id == id; });
-  navigate('resort-detail', r ? r.name : 'ゲレンデ詳細', '戻る', false);
-}
-
-function deleteTrip(id) {
-  if (!confirm('この遠征を削除しますか？')) return;
-  state.data.trips = state.data.trips.filter(function(t) { return t.id != id; });
-  saveAll();
-  goBack();
-}
-
-// ===== ゲレンデタブ =====
-function renderResortsMain() {
-  var html = '<div class="list-section"><div class="list-header">お気に入りゲレンデ</div>';
-  if (!state.data.resorts.length) {
-    html += '<div class="list-group"><div class="empty-state"><div class="empty-icon">⛷️</div><div class="empty-title">ゲレンデがありません</div><div class="empty-sub">AIに名前を伝えるだけで登録できます</div></div></div>';
-  } else {
-    html += '<div class="list-group">';
-    state.data.resorts.forEach(function(r) {
-      var sub = (r.altitude_top || '') + (r.courses ? ' · ' + r.courses : '') + (r.snow ? ' · 積雪 ' + r.snow : '');
-      html += '<div class="list-row" onclick="openResortDetail(' + r.id + ')">'
-        + '<div class="list-row-icon icon-blue" style="font-size:15px">⛷️</div>'
-        + '<div class="list-row-body"><div class="list-row-title">' + esc(r.name) + '</div>'
-        + '<div class="list-row-sub">' + esc(sub) + '</div></div>'
-        + '<span class="chevron">›</span></div>';
-    });
-    html += '</div>';
-  }
-  html += '</div><div class="spacer-sm"></div>';
-  html += '<button class="ios-btn btn-primary" onclick="openResortAdd()">＋ AIでゲレンデを登録</button>';
-  return html;
-}
-
-function openResortAdd() {
-  checkApiKey(function() {
-    state.temp.resortDraft = null;
-    navigate('resort-add-input', 'ゲレンデを追加', '戻る', true, '検索');
-  });
-}
-
-function renderResortAddInput() {
-  return '<div class="form-section" style="margin-top:16px">'
-    + '<div class="list-header">ゲレンデ名を入力</div>'
-    + '<div class="form-group"><div class="form-row">'
-    + '<input id="resort-name-input" type="text" placeholder="例：白馬八方尾根" style="text-align:left;flex:1">'
-    + '</div></div></div>'
-    + '<div class="spacer-sm"></div>'
-    + '<button class="ios-btn btn-blue" onclick="aiSearchResort()">🤖 AIでスペックを取得</button>'
-    + '<div id="resort-search-loading" style="text-align:center;padding:16px;color:var(--text3);font-size:14px;display:none">AIがデータを取得中...</div>'
-    + '<div class="status-msg" id="resort-add-status"></div>';
-}
-
-async function aiSearchResort() {
-  var inp = document.getElementById('resort-name-input');
-  if (!inp) return;
-  var name = inp.value.trim();
-  if (!name) { showStatus('resort-add-status', 'ゲレンデ名を入力してください', 'error'); return; }
-  var loading = document.getElementById('resort-search-loading');
-  if (loading) loading.style.display = 'block';
-  try {
-    var res = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' + state.apiKey, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        system_instruction: { parts: [{ text: 'あなたは日本のスキー場の専門家です。ゲレンデ名を受け取ったら情報をJSONのみで返してください。他のテキストは一切含めないでください。フォーマット: {"name":"正式名称","prefecture":"都道府県","area":"地域","altitude_top":"最高標高(例:1831m)","altitude_base":"麓標高(例:760m)","courses":"コース数(例:47本)","lifts":"リフト数(例:20本)","features":["特徴1","特徴2","特徴3"],"url":"公式サイトURL","notes":"一言メモ"}' }] },
-        contents: [{ role: 'user', parts: [{ text: name + 'のスキー場情報を返してください' }] }],
-        generationConfig: { maxOutputTokens: 1000 }
-      })
-    });
-    var data = await res.json();
-    if (data.error) throw new Error(data.error.message || JSON.stringify(data.error));
-    var text = data.candidates && data.candidates[0] ? data.candidates[0].content.parts[0].text : '';
-    var json = JSON.parse(text.replace(/```json|```/g, '').trim());
-    json.id = Date.now();
-    json.snow = null; json.hours = null; json.snowDetail = null; json.lastUpdated = null;
-    state.temp.resortDraft = json;
-    navigate('resort-ai-confirm', json.name, '戻る', false);
-  } catch(e) {
-    if (loading) loading.style.display = 'none';
-    showStatus('resort-add-status', 'エラー: ' + e.message, 'error');
-  }
-}
-
-function renderResortAIConfirm() {
-  var r = state.temp.resortDraft;
-  if (!r) return '';
-  var featHtml = (r.features || []).map(function(f) { return '<span class="hero-tag">' + esc(f) + '</span>'; }).join('');
-  return '<div class="hero-card" style="margin-top:16px">'
-    + '<div class="hero-name">' + esc(r.name) + '</div>'
-    + '<div class="hero-sub">' + esc((r.prefecture || '') + (r.area ? ' · ' + r.area : '')) + '</div>'
-    + '<div class="hero-tags">' + featHtml + '</div>'
-    + '<div class="hero-stat4">'
-    + '<div class="hstat4"><div class="hstat4-v">' + esc(r.altitude_top || '—') + '</div><div class="hstat4-l">最高標高</div></div>'
-    + '<div class="hstat4"><div class="hstat4-v">' + esc(r.altitude_base || '—') + '</div><div class="hstat4-l">麓標高</div></div>'
-    + '<div class="hstat4"><div class="hstat4-v">' + esc(r.courses || '—') + '</div><div class="hstat4-l">コース数</div></div>'
-    + '<div class="hstat4"><div class="hstat4-v">' + esc(r.lifts || '—') + '</div><div class="hstat4-l">リフト数</div></div>'
-    + '</div>'
-    + (r.url ? '<div class="hero-url" onclick="openUrl(\'' + esc(r.url) + '\')">'
-      + '<span>' + esc(r.url) + '</span><span style="color:rgba(255,255,255,0.6);font-size:14px">›</span></div>' : '')
-    + '</div>'
-    + (r.notes ? '<div style="margin:0 16px;font-size:14px;color:var(--text3);line-height:1.5">' + esc(r.notes) + '</div>' : '')
-    + '<button class="ios-btn btn-blue" onclick="saveResort()">⭐ お気に入りに登録</button>'
-    + '<div class="status-msg" id="resort-confirm-status"></div>';
-}
-
-function saveResort() {
-  if (!state.temp.resortDraft) return;
-  state.data.resorts.push(state.temp.resortDraft);
-  saveAll();
-  // navStackを全部クリアしてゲレンデタブに戻る
-  state.navStack = [];
-  switchTab('resorts');
-}
-
-function openResortDetail(id) {
-  state.temp.viewResortId = id;
-  var r = state.data.resorts.find(function(x) { return x.id == id; });
-  navigate('resort-detail', r ? r.name : 'ゲレンデ詳細', 'ゲレンデ', false);
-}
-
-function renderResortDetail() {
-  var r = state.data.resorts.find(function(x) { return x.id == state.temp.viewResortId; });
-  if (!r) return '<div class="empty-state">データが見つかりません</div>';
-  var featHtml = (r.features || []).map(function(f) { return '<span class="hero-tag">' + esc(f) + '</span>'; }).join('');
-
-  var snowRows = '';
-  if (r.snowDetail) {
-    snowRows = '<div class="snow-row"><span class="snow-key">積雪量</span><span class="snow-val good">' + esc(r.snow || '—') + '</span></div>'
-      + (r.snowDetail.new_snow ? '<div class="snow-row"><span class="snow-key">新雪</span><span class="snow-val">' + esc(r.snowDetail.new_snow) + '</span></div>' : '')
-      + (r.snowDetail.conditions ? '<div class="snow-row"><span class="snow-key">雪質</span><span class="snow-val">' + esc(r.snowDetail.conditions) + '</span></div>' : '')
-      + '<div class="snow-row"><span class="snow-key">営業時間</span><span class="snow-val">' + esc(r.hours || '—') + '</span></div>'
-      + (r.snowDetail.open_courses ? '<div class="snow-row"><span class="snow-key">営業コース</span><span class="snow-val">' + esc(r.snowDetail.open_courses) + '</span></div>' : '')
-      + '<div class="snow-row"><span class="snow-key">更新日時</span><span class="snow-val" style="font-size:13px;font-weight:400">' + esc(r.lastUpdated || '—') + '</span></div>';
-  } else {
-    snowRows = '<div class="snow-row"><span class="snow-key">積雪・営業情報</span><span class="snow-val pending">未取得</span></div>';
-  }
-
-  return '<div class="hero-card" style="margin-top:16px">'
-    + '<div class="hero-name">' + esc(r.name) + '</div>'
-    + '<div class="hero-sub">' + esc((r.prefecture || '') + (r.area ? ' · ' + r.area : '')) + '</div>'
-    + '<div class="hero-tags">' + featHtml + '</div>'
-    + '<div class="hero-stat4">'
-    + '<div class="hstat4"><div class="hstat4-v">' + esc(r.altitude_top || '—') + '</div><div class="hstat4-l">最高標高</div></div>'
-    + '<div class="hstat4"><div class="hstat4-v">' + esc(r.altitude_base || '—') + '</div><div class="hstat4-l">麓標高</div></div>'
-    + '<div class="hstat4"><div class="hstat4-v">' + esc(r.courses || '—') + '</div><div class="hstat4-l">コース数</div></div>'
-    + '<div class="hstat4"><div class="hstat4-v">' + esc(r.lifts || '—') + '</div><div class="hstat4-l">リフト数</div></div>'
-    + '</div>'
-    + (r.url ? '<div class="hero-url" onclick="openUrl(\'' + esc(r.url) + '\')">'
-      + '<span>' + esc(r.url) + '</span><span style="color:rgba(255,255,255,0.6);font-size:14px">›</span></div>' : '')
-    + '</div>'
-
-    + '<div class="list-section" style="margin-top:12px"><div class="list-header">積雪・営業情報</div>'
-    + '<div class="snow-box" id="snow-box">' + snowRows + '</div></div>'
-    + '<button class="ios-btn btn-secondary" onclick="updateSnow(' + r.id + ')">🌨 積雪・営業情報を更新（AI）</button>'
-
-    + '<div class="list-section" style="margin-top:4px"><div class="list-header">この遠征に設定する</div>'
-    + '<div class="list-group">'
-    + (state.data.trips.length
-      ? state.data.trips.map(function(t) {
-          var isSet = t.resortId == r.id;
-          return '<div class="list-row" onclick="setResortToTrip(' + r.id + ',' + t.id + ')">'
-            + '<div class="list-row-body"><div class="list-row-title">' + esc(t.name) + '</div></div>'
-            + '<span style="font-size:14px;color:' + (isSet ? 'var(--green)' : 'var(--blue)') + '">'
-            + (isSet ? '✓ 設定済み' : '設定する') + '</span></div>';
-        }).join('')
-      : '<div class="list-row"><div class="list-row-body"><div class="list-row-title" style="color:var(--text3)">遠征が登録されていません</div></div></div>')
-    + '</div></div>'
-
-    + '<button class="ios-btn btn-danger" onclick="deleteResort(' + r.id + ')">登録を削除</button>';
-}
-
-function setResortToTrip(resortId, tripId) {
-  var t = state.data.trips.find(function(x) { return x.id == tripId; });
-  var r = state.data.resorts.find(function(x) { return x.id == resortId; });
-  if (!t || !r) return;
-  t.resortId = resortId;
-  t.resortName = r.name;
-  saveAll();
-  render();
-}
-
-async function updateSnow(id) {
-  checkApiKey(async function() {
-    var r = state.data.resorts.find(function(x) { return x.id == id; });
-    if (!r) return;
-    var box = document.getElementById('snow-box');
-    if (box) box.innerHTML = '<div class="snow-row"><span class="snow-key">取得中...</span><span class="snow-val pending">AIが情報を生成中</span></div>';
-    try {
-      var res = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' + state.apiKey, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          system_instruction: { parts: [{ text: 'あなたは日本のスキー場の積雪・営業情報の専門家です。JSONのみで返してください。フォーマット: {"snow":"積雪量(例:65cm)","new_snow":"新雪(例:昨夜12cm)","hours":"営業時間(例:8:30〜16:30)","conditions":"雪質コメント(例:パウダー良好)","open_courses":"営業コース数(例:32本/47本中)"}' }] },
-          contents: [{ role: 'user', parts: [{ text: r.name + 'の現在の積雪・営業情報を教えてください。今シーズン2025-26の1月の典型的な状況として現実的な数値を返してください。' }] }],
-          generationConfig: { maxOutputTokens: 1000 }
-        })
-      });
-      var data = await res.json();
-      if (data.error) throw new Error(data.error.message || JSON.stringify(data.error));
-      var text = data.candidates && data.candidates[0] ? data.candidates[0].content.parts[0].text : '';
-      var json = JSON.parse(text.replace(/```json|```/g, '').trim());
-      r.snow = json.snow || '—';
-      r.hours = json.hours || '—';
-      r.snowDetail = json;
-      r.lastUpdated = new Date().toLocaleString('ja-JP', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
-      saveAll();
-      if (box) {
-        box.innerHTML = '<div class="snow-row"><span class="snow-key">積雪量</span><span class="snow-val good">' + esc(r.snow) + '</span></div>'
-          + (json.new_snow ? '<div class="snow-row"><span class="snow-key">新雪</span><span class="snow-val">' + esc(json.new_snow) + '</span></div>' : '')
-          + (json.conditions ? '<div class="snow-row"><span class="snow-key">雪質</span><span class="snow-val">' + esc(json.conditions) + '</span></div>' : '')
-          + '<div class="snow-row"><span class="snow-key">営業時間</span><span class="snow-val">' + esc(r.hours) + '</span></div>'
-          + (json.open_courses ? '<div class="snow-row"><span class="snow-key">営業コース</span><span class="snow-val">' + esc(json.open_courses) + '</span></div>' : '')
-          + '<div class="snow-row"><span class="snow-key">更新日時</span><span class="snow-val" style="font-size:13px;font-weight:400">' + esc(r.lastUpdated) + '</span></div>';
-      }
-    } catch(e) {
-      if (box) box.innerHTML = '<div class="snow-row"><span class="snow-key">エラー</span><span class="snow-val" style="color:var(--red)">' + e.message + '</span></div>';
-    }
-  });
-}
-
-function deleteResort(id) {
-  if (!confirm('このゲレンデを削除しますか？')) return;
-  state.data.resorts = state.data.resorts.filter(function(r) { return r.id != id; });
-  // 遠征のゲレンデ参照もクリア
-  state.data.trips.forEach(function(t) { if (t.resortId == id) { t.resortId = ''; t.resortName = ''; } });
-  saveAll();
-  goBack();
-}
-
-// ===== 費用タブ =====
-function renderCost() {
-  var c = state.costCalc;
-  var totalLodge = c.lodge * c.nights;
-  var totalLift = c.lift * c.nights;
-  var totalFood = c.food * (c.nights + 1);
-  var per = c.trans + totalLodge + totalLift + totalFood;
-  var max = Math.max(c.trans, totalLodge, totalLift, totalFood, 1);
-
-  return '<div class="form-section" style="margin-top:16px"><div class="list-header">入力</div>'
-    + '<div class="form-group">'
-    + '<div class="form-row"><span class="form-label">人数</span><input id="c-members" type="number" min="1" max="30" value="' + c.members + '" oninput="updateCost()"><span class="form-unit">人</span></div>'
-    + '<div class="form-row"><span class="form-label">泊数</span><input id="c-nights" type="number" min="1" max="14" value="' + c.nights + '" oninput="updateCost()"><span class="form-unit">泊</span></div>'
-    + '<div class="form-row"><span class="form-label">交通費</span><input id="c-trans" type="number" value="' + c.trans + '" oninput="updateCost()"><span class="form-unit">円/人</span></div>'
-    + '<div class="form-row"><span class="form-label">宿泊</span><input id="c-lodge" type="number" value="' + c.lodge + '" oninput="updateCost()"><span class="form-unit">円/泊</span></div>'
-    + '<div class="form-row"><span class="form-label">リフト券</span><input id="c-lift" type="number" value="' + c.lift + '" oninput="updateCost()"><span class="form-unit">円/日</span></div>'
-    + '<div class="form-row"><span class="form-label">食費</span><input id="c-food" type="number" value="' + c.food + '" oninput="updateCost()"><span class="form-unit">円/日</span></div>'
-    + '</div></div>'
-
-    + '<div class="form-section" style="margin-top:12px"><div class="list-header">内訳（一人）</div>'
-    + '<div class="list-group">'
-    + costBarRow('🚌 交通費', c.trans, c.trans, max, '#007aff')
-    + costBarRow('🏠 宿泊（' + c.nights + '泊）', totalLodge, totalLodge, max, '#5856d6')
-    + costBarRow('🎫 リフト券（' + c.nights + '日）', totalLift, totalLift, max, '#34c759')
-    + costBarRow('🍜 食費（' + (c.nights + 1) + '日）', totalFood, totalFood, max, '#ff9500')
-    + '</div></div>'
-
-    + '<div class="form-section" style="margin-top:12px"><div class="list-header">合計</div>'
-    + '<div class="list-group">'
-    + '<div class="form-row"><span class="form-label" style="min-width:100px">一人当たり</span><span style="font-size:20px;font-weight:600;color:var(--text)">¥' + per.toLocaleString() + '</span></div>'
-    + '<div class="form-row"><span class="form-label" style="min-width:100px">' + c.members + '人合計</span><span style="font-size:17px;font-weight:500">¥' + (per * c.members).toLocaleString() + '</span></div>'
-    + '</div></div>';
-}
-
-function costBarRow(label, value, raw, max, color) {
-  var pct = Math.round(raw / max * 92);
-  return '<div class="cost-bar-row">'
-    + '<div class="cost-bar-label"><span class="cost-bar-name">' + label + '</span><span class="cost-bar-val">¥' + value.toLocaleString() + '</span></div>'
-    + '<div class="cost-bar-bg"><div class="cost-bar-fill" style="width:' + pct + '%;background:' + color + '"></div></div>'
-    + '</div>';
-}
-
-function bindCostInputs() {}
-function updateCost() {
-  state.costCalc = {
-    members: parseInt(document.getElementById('c-members').value) || 4,
-    nights: parseInt(document.getElementById('c-nights').value) || 3,
-    trans: parseInt(document.getElementById('c-trans').value) || 0,
-    lodge: parseInt(document.getElementById('c-lodge').value) || 0,
-    lift: parseInt(document.getElementById('c-lift').value) || 0,
-    food: parseInt(document.getElementById('c-food').value) || 0
-  };
-  saveAll();
-  var el = document.getElementById('content-inner');
-  el.innerHTML = renderCost();
-}
-
-// ===== AIチャットタブ =====
-function renderAI() {
-  var msgsHtml = state.chatHistory.length === 0
-    ? '<div class="msg ai">こんにちは！ゲレンデ選び・費用・雪質・日程など、スノボ遠征のことなら何でも相談してください⛷️</div>'
-    : state.chatHistory.map(function(m) {
-        return '<div class="msg ' + m.role + '">' + esc(m.content) + '</div>';
-      }).join('');
-
-  return '<div class="chat-area">'
-    + '<div class="chat-msgs" id="chat-msgs">' + msgsHtml + '</div>'
-    + '<div class="chat-chips">'
-    + '<span class="chat-chip" onclick="quickChat(\'おすすめのゲレンデを教えて\')">ゲレンデ相談</span>'
-    + '<span class="chat-chip" onclick="quickChat(\'費用を節約する方法は？\')">費用節約</span>'
-    + '<span class="chat-chip" onclick="quickChat(\'パウダーを狙うコツは？\')">雪質狙い</span>'
-    + '<span class="chat-chip" onclick="quickChat(\'関東から日帰りできるゲレンデは？\')">日帰り</span>'
-    + '</div>'
-    + '<div class="chat-input-bar">'
-    + '<input id="chat-input" type="text" placeholder="メッセージ..." onkeydown="if(event.key===\'Enter\')sendChat()">'
-    + '<button class="chat-send" id="chat-send-btn" onclick="sendChat()">↑</button>'
-    + '</div></div>';
-}
-
-function scrollChatToBottom() {
-  var el = document.getElementById('chat-msgs');
-  if (el) el.scrollTop = el.scrollHeight;
-}
-
-function quickChat(msg) {
-  document.getElementById('chat-input').value = msg;
-  sendChat();
-}
-
-async function sendChat() {
-  checkApiKey(async function() {
-    var inp = document.getElementById('chat-input');
-    if (!inp) return;
-    var msg = inp.value.trim();
-    if (!msg) return;
-    inp.value = '';
-    var btn = document.getElementById('chat-send-btn');
-    if (btn) btn.disabled = true;
-
-    state.chatHistory.push({ role: 'user', content: msg });
-    render();
-
-    var resortNames = state.data.resorts.map(function(r) { return r.name; }).join('、') || 'なし';
-    var tripNames = state.data.trips.map(function(t) { return t.name; }).join('、') || 'なし';
-    var sys = 'あなたはスノーボード遠征の専門アドバイザー。ユーザーは東京・町田市在住24歳、スノボ歴6年の上級者で毎週のように滑りに行く。登録ゲレンデ:' + resortNames + '。登録遠征:' + tripNames + '。返答は200文字以内で簡潔に。';
-
-    try {
-      var contents = state.chatHistory.slice(-14).map(function(m) {
-        return { role: m.role === 'ai' ? 'model' : 'user', parts: [{ text: m.content }] };
-      });
-      var res = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' + state.apiKey, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          system_instruction: { parts: [{ text: sys }] },
-          contents: contents,
-          generationConfig: { maxOutputTokens: 1000 }
-        })
-      });
-      var data = await res.json();
-      if (data.error) {
-        state.chatHistory.push({ role: 'ai', content: 'APIエラー: ' + (data.error.message || JSON.stringify(data.error)) });
-      } else {
-        var reply = data.candidates && data.candidates[0] ? data.candidates[0].content.parts[0].text : '返答が取得できませんでした。';
-        state.chatHistory.push({ role: 'ai', content: reply });
-      }
-    } catch(e) {
-      state.chatHistory.push({ role: 'ai', content: 'ネットワークエラー: ' + e.message });
-    }
-    render();
-    scrollChatToBottom();
-  });
-}
-
-// ===== ギア管理 =====
-var GEAR_CATEGORIES = {
-  snowboard: [
-    { key: 'board',    label: '板',          icon: '🏂' },
-    { key: 'boots',    label: 'ブーツ',      icon: '👢' },
-    { key: 'binding',  label: 'ビンディング', icon: '🔩' },
-    { key: 'wear_top', label: 'ウェア（上）', icon: '🧥' },
-    { key: 'wear_btm', label: 'ウェア（下）', icon: '👖' },
-    { key: 'helmet',   label: 'ヘルメット',  icon: '⛑' },
-    { key: 'goggles',  label: 'ゴーグル',    icon: '🥽' },
-    { key: 'gloves',   label: 'グローブ',    icon: '🧤' },
-    { key: 'protector',label: 'プロテクター', icon: '🛡' },
-    { key: 'bag',      label: 'バッグ',      icon: '🎒' },
-    { key: 'other',    label: 'その他',       icon: '📦' }
-  ],
-  ski: [
-    { key: 'board',    label: '板',          icon: '⛷️' },
-    { key: 'boots',    label: 'ブーツ',      icon: '👢' },
-    { key: 'stock',    label: 'ストック',     icon: '🪄' },
-    { key: 'binding',  label: 'ビンディング', icon: '🔩' },
-    { key: 'wear_top', label: 'ウェア（上）', icon: '🧥' },
-    { key: 'wear_btm', label: 'ウェア（下）', icon: '👖' },
-    { key: 'helmet',   label: 'ヘルメット',  icon: '⛑' },
-    { key: 'goggles',  label: 'ゴーグル',    icon: '🥽' },
-    { key: 'gloves',   label: 'グローブ',    icon: '🧤' },
-    { key: 'bag',      label: 'バッグ',      icon: '🎒' },
-    { key: 'other',    label: 'その他',       icon: '📦' }
-  ]
+// ===================================================
+// ギア
+// ===================================================
+var GC = {
+  snowboard:[{key:'board',label:'板',icon:'🏂'},{key:'boots',label:'ブーツ',icon:'👢'},{key:'binding',label:'ビンディング',icon:'🔩'},{key:'wear_top',label:'ウェア（上）',icon:'🧥'},{key:'wear_btm',label:'ウェア（下）',icon:'👖'},{key:'helmet',label:'ヘルメット',icon:'⛑'},{key:'goggles',label:'ゴーグル',icon:'🥽'},{key:'gloves',label:'グローブ',icon:'🧤'},{key:'protector',label:'プロテクター',icon:'🛡'},{key:'bag',label:'バッグ',icon:'🎒'},{key:'other',label:'その他',icon:'📦'}],
+  ski:[{key:'board',label:'板',icon:'⛷️'},{key:'boots',label:'ブーツ',icon:'👢'},{key:'stock',label:'ストック',icon:'🪄'},{key:'binding',label:'ビンディング',icon:'🔩'},{key:'wear_top',label:'ウェア（上）',icon:'🧥'},{key:'wear_btm',label:'ウェア（下）',icon:'👖'},{key:'helmet',label:'ヘルメット',icon:'⛑'},{key:'goggles',label:'ゴーグル',icon:'🥽'},{key:'gloves',label:'グローブ',icon:'🧤'},{key:'bag',label:'バッグ',icon:'🎒'},{key:'other',label:'その他',icon:'📦'}]
 };
 
-function renderGearMain() {
-  var filter = state.temp.gearFilter || 'owned';
-  var sport  = state.temp.gearSport  || 'snowboard';
-
-  var filtered = state.data.gear.filter(function(g) {
-    return g.status === filter && g.sport === sport;
-  });
-
-  // サマリー数
-  var ownedSB   = state.data.gear.filter(function(g){ return g.status==='owned'   && g.sport==='snowboard'; }).length;
-  var wishSB    = state.data.gear.filter(function(g){ return g.status==='wishlist' && g.sport==='snowboard'; }).length;
-  var ownedSK   = state.data.gear.filter(function(g){ return g.status==='owned'   && g.sport==='ski'; }).length;
-  var wishSK    = state.data.gear.filter(function(g){ return g.status==='wishlist' && g.sport==='ski'; }).length;
-
-  var html = '';
-
-  // サマリーカード
-  html += '<div style="margin:16px;display:grid;grid-template-columns:1fr 1fr;gap:10px">';
-  html += summaryCard('🏂 スノーボード', ownedSB + '点所持', wishSB + '点ほしい', '#0a1628');
-  html += summaryCard('⛷️ スキー', ownedSK + '点所持', wishSK + '点ほしい', '#1a472a');
-  html += '</div>';
-
-  // スポーツ切替セグメント
-  html += '<div style="margin:0 16px 12px;display:flex;background:var(--gray4);border-radius:9px;padding:2px">';
-  html += '<button onclick="setGearSport(\'snowboard\')" style="flex:1;padding:7px;border:none;border-radius:7px;font-size:14px;font-family:inherit;cursor:pointer;'
-    + (sport==='snowboard' ? 'background:#fff;font-weight:600;color:var(--text)' : 'background:transparent;color:var(--text3)') + '">🏂 スノーボード</button>';
-  html += '<button onclick="setGearSport(\'ski\')" style="flex:1;padding:7px;border:none;border-radius:7px;font-size:14px;font-family:inherit;cursor:pointer;'
-    + (sport==='ski' ? 'background:#fff;font-weight:600;color:var(--text)' : 'background:transparent;color:var(--text3)') + '">⛷️ スキー</button>';
-  html += '</div>';
-
-  // 所持 / ほしいリスト切替
-  html += '<div style="margin:0 16px 12px;display:flex;background:var(--gray4);border-radius:9px;padding:2px">';
-  html += '<button onclick="setGearFilter(\'owned\')" style="flex:1;padding:7px;border:none;border-radius:7px;font-size:14px;font-family:inherit;cursor:pointer;'
-    + (filter==='owned' ? 'background:#fff;font-weight:600;color:var(--text)' : 'background:transparent;color:var(--text3)') + '">✅ 所持中</button>';
-  html += '<button onclick="setGearFilter(\'wishlist\')" style="flex:1;padding:7px;border:none;border-radius:7px;font-size:14px;font-family:inherit;cursor:pointer;'
-    + (filter==='wishlist' ? 'background:#fff;font-weight:600;color:var(--text)' : 'background:transparent;color:var(--text3)') + '">⭐ ほしいリスト</button>';
-  html += '</div>';
-
-  // ギアリスト
-  html += '<div style="margin:0 16px">';
-  if (!filtered.length) {
-    html += '<div class="list-group"><div class="empty-state" style="padding:32px 16px">'
-      + '<div class="empty-icon">' + (filter==='owned' ? '🎿' : '⭐') + '</div>'
-      + '<div class="empty-title">' + (filter==='owned' ? 'まだ登録されていません' : 'ほしいギアがありません') + '</div>'
-      + '<div class="empty-sub">下のボタンから追加しよう</div></div></div>';
+function rGear(){
+  var f=S.tmp.gearFilter,sp=S.tmp.gearSport;
+  var filt=S.data.gear.filter(function(g){return g.status===f&&g.sport===sp;});
+  var oSB=S.data.gear.filter(function(g){return g.status==='owned'&&g.sport==='snowboard';}).length;
+  var wSB=S.data.gear.filter(function(g){return g.status==='wishlist'&&g.sport==='snowboard';}).length;
+  var oSK=S.data.gear.filter(function(g){return g.status==='owned'&&g.sport==='ski';}).length;
+  var wSK=S.data.gear.filter(function(g){return g.status==='wishlist'&&g.sport==='ski';}).length;
+  var h='<div style="margin:16px;display:grid;grid-template-columns:1fr 1fr;gap:10px">'
+    +gsc('🏂 スノーボード',oSB+'点所持',wSB+'点ほしい','#0a1628')
+    +gsc('⛷️ スキー',oSK+'点所持',wSK+'点ほしい','#1a472a')
+    +'</div>'
+    +'<div class="seg">'+sgb("setGS('snowboard')","🏂 スノーボード",sp==='snowboard')+sgb("setGS('ski')","⛷️ スキー",sp==='ski')+'</div>'
+    +'<div class="seg">'+sgb("setGF('owned')","✅ 所持中",f==='owned')+sgb("setGF('wishlist')","⭐ ほしいリスト",f==='wishlist')+'</div>';
+  if(!filt.length){
+    h+='<div class="lg" style="margin:0 16px"><div class="empty" style="padding:32px 16px"><div class="eico">'+(f==='owned'?'🎿':'⭐')+'</div><div class="etit">'+(f==='owned'?'まだ登録されていません':'ほしいギアがありません')+'</div><div class="esub">追加ボタンから登録しよう</div></div></div>';
   } else {
-    html += '<div class="list-group">';
-    filtered.forEach(function(g) {
-      var cats = GEAR_CATEGORIES[g.sport] || GEAR_CATEGORIES.snowboard;
-      var cat = cats.find(function(c){ return c.key === g.category; }) || { icon: '📦', label: 'その他' };
-      var sub = [g.brand, g.model, g.year ? g.year + 'モデル' : '', g.price ? '¥' + Number(g.price).toLocaleString() : ''].filter(Boolean).join(' · ');
-      html += '<div class="list-row" onclick="openGearDetail(' + g.id + ')">'
-        + '<div class="list-row-icon" style="background:' + (g.sport==='snowboard' ? '#0a1628' : '#1a472a') + ';font-size:15px">' + cat.icon + '</div>'
-        + '<div class="list-row-body"><div class="list-row-title">' + esc(g.name || (cat.label + '（未設定）')) + '</div>'
-        + (sub ? '<div class="list-row-sub">' + esc(sub) + '</div>' : '') + '</div>'
-        + '<span class="chevron">›</span></div>';
+    h+='<div class="lg" style="margin:0 16px">';
+    filt.forEach(function(g){
+      var cats=GC[g.sport]||GC.snowboard,cat=cats.find(function(c){return c.key===g.category;})||{icon:'📦',label:'その他'};
+      var sub=[g.brand,g.model,g.year?g.year+'モデル':'',g.price?'¥'+Number(g.price).toLocaleString():''].filter(Boolean).join(' · ');
+      h+='<div class="lr" onclick="openGD('+g.id+')"><div class="li" style="background:'+(g.sport==='snowboard'?'#0a1628':'#1a472a')+'">'+cat.icon+'</div><div class="lb"><div class="lt">'+e(g.name||(cat.label+'（未設定）'))+'</div>'+(sub?'<div class="ls">'+e(sub)+'</div>':'')+'</div><span class="cv">›</span></div>';
     });
-    html += '</div>';
+    h+='</div>';
   }
-  html += '</div>';
-
-  html += '<div class="spacer-sm"></div>';
-  html += '<button class="ios-btn btn-primary" onclick="openGearAdd()">＋ ギアを追加</button>';
-  return html;
+  return h+'<div class="sm-gap"></div><button class="btn bp" onclick="openGA()">＋ ギアを追加</button>';
 }
 
-function summaryCard(title, line1, line2, bg) {
-  return '<div style="background:' + bg + ';border-radius:12px;padding:14px;color:#fff">'
-    + '<div style="font-size:13px;color:rgba(255,255,255,0.65);margin-bottom:6px">' + title + '</div>'
-    + '<div style="font-size:17px;font-weight:600">' + line1 + '</div>'
-    + '<div style="font-size:13px;color:rgba(255,255,255,0.6);margin-top:2px">' + line2 + '</div>'
-    + '</div>';
+function gsc(t,l1,l2,bg){ return '<div style="background:'+bg+';border-radius:12px;padding:14px;color:#fff"><div style="font-size:12px;color:rgba(255,255,255,0.6);margin-bottom:6px">'+t+'</div><div style="font-size:17px;font-weight:600">'+l1+'</div><div style="font-size:13px;color:rgba(255,255,255,0.55);margin-top:2px">'+l2+'</div></div>'; }
+function sgb(oc,lbl,on){ return '<button onclick="'+oc+'" class="sb'+(on?' on':'')+'">'+lbl+'</button>'; }
+function setGF(f){ S.tmp.gearFilter=f; render(); }
+function setGS(s){ S.tmp.gearSport=s;  render(); }
+
+function openGA(){ S.tmp.gearDraft={sport:S.tmp.gearSport||'snowboard',status:S.tmp.gearFilter||'owned',category:''}; nav('gear-add','ギアを追加','ギア',true,'保存'); }
+
+function rGearAdd(){
+  var d=S.tmp.gearDraft||{},sp=d.sport||'snowboard',cats=GC[sp];
+  var opts='<option value="">選択してください</option>';
+  cats.forEach(function(c){ opts+='<option value="'+c.key+'"'+(d.category===c.key?' selected':'')+'>'+c.icon+' '+c.label+'</option>'; });
+  return '<div class="fs" style="margin-top:16px">'
+    +'<div class="seg">'+sgb("gdSp('snowboard')","🏂 スノーボード",sp==='snowboard')+sgb("gdSp('ski')","⛷️ スキー",sp==='ski')+'</div>'
+    +'<div class="seg">'+sgb("gdSt('owned')","✅ 所持中",d.status!=='wishlist')+sgb("gdSt('wishlist')","⭐ ほしいリスト",d.status==='wishlist')+'</div>'
+    +'<div class="fg">'
+    +'<div class="fr"><span class="fl">カテゴリ</span><select id="g-cat" onchange="S.tmp.gearDraft.category=this.value">'+opts+'</select></div>'
+    +'<div class="fr"><span class="fl">名前</span><input id="g-name" type="text" placeholder="例：Custom X" value="'+e(d.name||'')+'" style="text-align:right"></div>'
+    +'<div class="fr"><span class="fl">ブランド</span><input id="g-brand" type="text" placeholder="例：Burton" value="'+e(d.brand||'')+'" style="text-align:right"></div>'
+    +'<div class="fr"><span class="fl">モデル名</span><input id="g-model" type="text" placeholder="例：Custom X 156W" value="'+e(d.model||'')+'" style="text-align:right"></div>'
+    +'<div class="fr"><span class="fl">サイズ</span><input id="g-size" type="text" placeholder="例：156cm / 27.5cm" value="'+e(d.size||'')+'" style="text-align:right"></div>'
+    +'<div class="fr"><span class="fl">年式</span><input id="g-year" type="number" placeholder="2024" value="'+e(d.year||'')+'" style="text-align:right"></div>'
+    +'<div class="fr"><span class="fl">価格</span><input id="g-price" type="number" placeholder="60000" value="'+e(d.price||'')+'" style="text-align:right"><span class="fu">円</span></div>'
+    +'<div class="fr"><span class="fl">購入店</span><input id="g-shop" type="text" placeholder="例：OSHMAN\'S" value="'+e(d.shop||'')+'" style="text-align:right"></div>'
+    +'<div class="fr" style="align-items:flex-start"><span class="fl" style="padding-top:10px">メモ</span><textarea id="g-memo" placeholder="状態・使用感など...">'+e(d.memo||'')+'</textarea></div>'
+    +'</div><div class="status" id="gs"></div>';
 }
 
-function setGearFilter(f) { state.temp.gearFilter = f; render(); }
-function setGearSport(s)  { state.temp.gearSport  = s; render(); }
+function cgd(){
+  var d=S.tmp.gearDraft||{};
+  d.category=(document.getElementById('g-cat')||{}).value||d.category||'';
+  d.name=(document.getElementById('g-name')||{}).value||'';
+  d.brand=(document.getElementById('g-brand')||{}).value||'';
+  d.model=(document.getElementById('g-model')||{}).value||'';
+  d.size=(document.getElementById('g-size')||{}).value||'';
+  d.year=(document.getElementById('g-year')||{}).value||'';
+  d.price=(document.getElementById('g-price')||{}).value||'';
+  d.shop=(document.getElementById('g-shop')||{}).value||'';
+  d.memo=(document.getElementById('g-memo')||{}).value||'';
+  return d;
+}
+function gdSp(s){ cgd();S.tmp.gearDraft.sport=s; render(); }
+function gdSt(s){ cgd();S.tmp.gearDraft.status=s; render(); }
 
-function openGearAdd() {
-  state.temp.gearDraft = { sport: state.temp.gearSport || 'snowboard', status: state.temp.gearFilter || 'owned', category: '' };
-  navigate('gear-add', 'ギアを追加', 'ギア', false);
+function saveGear(){
+  var d=cgd();
+  if(!d.category){st('gs','カテゴリを選択してください','err');return;}
+  d.id=Date.now(); S.data.gear.push(d); save();
+  S.tmp.gearSport=d.sport; S.tmp.gearFilter=d.status; goBack();
 }
 
-function renderGearAdd() {
-  var d = state.temp.gearDraft || {};
-  var sport = d.sport || 'snowboard';
-  var cats = GEAR_CATEGORIES[sport];
+function openGD(id){ S.tmp.vGear=id;var g=S.data.gear.find(function(x){return x.id==id;});nav('gear-detail',g?(g.name||'ギア詳細'):'ギア詳細','ギア',false); }
 
-  var catOpts = '<option value="">選択してください</option>';
-  cats.forEach(function(c) { catOpts += '<option value="' + c.key + '"' + (d.category===c.key?' selected':'') + '>' + c.icon + ' ' + c.label + '</option>'; });
-
-  return '<div class="form-section" style="margin-top:16px">'
-    + '<div class="list-header">スポーツ</div>'
-    + '<div style="display:flex;background:var(--gray4);border-radius:9px;padding:2px;margin-bottom:4px">'
-    + '<button onclick="gearDraftSet(\'sport\',\'snowboard\')" style="flex:1;padding:8px;border:none;border-radius:7px;font-size:14px;font-family:inherit;cursor:pointer;'
-    + (sport==='snowboard'?'background:#fff;font-weight:600;color:var(--text)':'background:transparent;color:var(--text3)') + '">🏂 スノーボード</button>'
-    + '<button onclick="gearDraftSet(\'sport\',\'ski\')" style="flex:1;padding:8px;border:none;border-radius:7px;font-size:14px;font-family:inherit;cursor:pointer;'
-    + (sport==='ski'?'background:#fff;font-weight:600;color:var(--text)':'background:transparent;color:var(--text3)') + '">⛷️ スキー</button>'
-    + '</div></div>'
-    + '<div class="form-section" style="margin-top:8px">'
-    + '<div class="list-header">状態</div>'
-    + '<div style="display:flex;background:var(--gray4);border-radius:9px;padding:2px;margin-bottom:4px">'
-    + '<button onclick="gearDraftSet(\'status\',\'owned\')" style="flex:1;padding:8px;border:none;border-radius:7px;font-size:14px;font-family:inherit;cursor:pointer;'
-    + (d.status!=='wishlist'?'background:#fff;font-weight:600;color:var(--text)':'background:transparent;color:var(--text3)') + '">✅ 所持中</button>'
-    + '<button onclick="gearDraftSet(\'status\',\'wishlist\')" style="flex:1;padding:8px;border:none;border-radius:7px;font-size:14px;font-family:inherit;cursor:pointer;'
-    + (d.status==='wishlist'?'background:#fff;font-weight:600;color:var(--text)':'background:transparent;color:var(--text3)') + '">⭐ ほしいリスト</button>'
-    + '</div></div>'
-    + '<div class="form-section" style="margin-top:8px">'
-    + '<div class="list-header">ギア情報</div>'
-    + '<div class="form-group">'
-    + '<div class="form-row"><span class="form-label">カテゴリ</span><select id="g-category" onchange="gearDraftSet(\'category\',this.value)">' + catOpts + '</select></div>'
-    + '<div class="form-row"><span class="form-label">名前</span><input id="g-name" type="text" placeholder="例：Custom X" value="' + esc(d.name||'') + '" style="text-align:right"></div>'
-    + '<div class="form-row"><span class="form-label">ブランド</span><input id="g-brand" type="text" placeholder="例：Burton" value="' + esc(d.brand||'') + '" style="text-align:right"></div>'
-    + '<div class="form-row"><span class="form-label">モデル名</span><input id="g-model" type="text" placeholder="例：Custom X 156W" value="' + esc(d.model||'') + '" style="text-align:right"></div>'
-    + '<div class="form-row"><span class="form-label">サイズ</span><input id="g-size" type="text" placeholder="例：156cm / 27.5cm" value="' + esc(d.size||'') + '" style="text-align:right"></div>'
-    + '<div class="form-row"><span class="form-label">年式</span><input id="g-year" type="number" placeholder="例：2024" value="' + esc(d.year||'') + '" style="text-align:right"></div>'
-    + '<div class="form-row"><span class="form-label">価格</span><input id="g-price" type="number" placeholder="例：60000" value="' + esc(d.price||'') + '" style="text-align:right"><span class="form-unit">円</span></div>'
-    + '<div class="form-row"><span class="form-label">購入店</span><input id="g-shop" type="text" placeholder="例：OSHMAN\'S渋谷" value="' + esc(d.shop||'') + '" style="text-align:right"></div>'
-    + '<div class="form-row" style="align-items:flex-start"><span class="form-label" style="padding-top:10px">メモ</span><textarea id="g-memo" placeholder="状態・使用感など...">' + esc(d.memo||'') + '</textarea></div>'
-    + '</div></div>'
-    + '<button class="ios-btn btn-primary" onclick="saveGear()">保存する</button>'
-    + '<div class="status-msg" id="gear-status"></div>';
+function rGearDetail(){
+  var g=S.data.gear.find(function(x){return x.id==S.tmp.vGear;});
+  if(!g)return'<div class="empty">データなし</div>';
+  var cats=GC[g.sport]||GC.snowboard,cat=cats.find(function(c){return c.key===g.category;})||{icon:'📦',label:'その他'};
+  return '<div class="hc" style="margin-top:16px">'
+    +'<div style="font-size:36px;margin-bottom:8px">'+cat.icon+'</div>'
+    +'<div class="hn">'+e(g.name||cat.label)+'</div>'
+    +'<div class="hsub">'+e(cat.label)+' · '+(g.sport==='ski'?'⛷️ スキー':'🏂 スノーボード')+'</div>'
+    +'<div class="htags"><span class="htag">'+(g.status==='wishlist'?'⭐ ほしいリスト':'✅ 所持中')+'</span>'
+    +(g.year?'<span class="htag">'+e(g.year)+'モデル</span>':'')+(g.size?'<span class="htag">'+e(g.size)+'</span>':'')+'</div></div>'
+    +'<div class="is">'
+    +(g.brand?ir('ブランド',g.brand):'')+(g.model?ir('モデル名',g.model):'')
+    +(g.size?ir('サイズ',g.size):'')+(g.year?ir('年式',g.year+'モデル'):'')
+    +(g.price?ir('価格','¥'+Number(g.price).toLocaleString()):'')+(g.shop?ir('購入店',g.shop):'')
+    +'</div>'
+    +(g.memo?'<div style="margin:12px 16px 0;background:var(--white);border-radius:12px;padding:14px 16px"><div style="font-size:13px;color:var(--text3);margin-bottom:6px">メモ</div><div style="font-size:15px;line-height:1.6">'+e(g.memo)+'</div></div>':'')
+    +'<button class="btn bs" onclick="togGS('+g.id+')">'+(g.status==='wishlist'?'✅ 所持中に移動':'⭐ ほしいリストに移動')+'</button>'
+    +'<button class="btn bd" onclick="delGear('+g.id+')">このギアを削除</button>';
 }
-
-function gearDraftSet(key, val) {
-  // 入力中の値を現在のdraftに保持してから画面再描画
-  if (state.temp.gearDraft) {
-    state.temp.gearDraft.name     = (document.getElementById('g-name')  || {}).value  || state.temp.gearDraft.name  || '';
-    state.temp.gearDraft.brand    = (document.getElementById('g-brand') || {}).value  || state.temp.gearDraft.brand || '';
-    state.temp.gearDraft.model    = (document.getElementById('g-model') || {}).value  || state.temp.gearDraft.model || '';
-    state.temp.gearDraft.size     = (document.getElementById('g-size')  || {}).value  || state.temp.gearDraft.size  || '';
-    state.temp.gearDraft.year     = (document.getElementById('g-year')  || {}).value  || state.temp.gearDraft.year  || '';
-    state.temp.gearDraft.price    = (document.getElementById('g-price') || {}).value  || state.temp.gearDraft.price || '';
-    state.temp.gearDraft.shop     = (document.getElementById('g-shop')  || {}).value  || state.temp.gearDraft.shop  || '';
-    state.temp.gearDraft.memo     = (document.getElementById('g-memo')  || {}).value  || state.temp.gearDraft.memo  || '';
-    state.temp.gearDraft.category = (document.getElementById('g-category') || {}).value || state.temp.gearDraft.category || '';
-    state.temp.gearDraft[key] = val;
-  }
-  render();
-}
-
-function saveGear() {
-  var d = state.temp.gearDraft || {};
-  d.name     = (document.getElementById('g-name')     || {}).value || d.name     || '';
-  d.brand    = (document.getElementById('g-brand')    || {}).value || d.brand    || '';
-  d.model    = (document.getElementById('g-model')    || {}).value || d.model    || '';
-  d.size     = (document.getElementById('g-size')     || {}).value || d.size     || '';
-  d.year     = (document.getElementById('g-year')     || {}).value || d.year     || '';
-  d.price    = (document.getElementById('g-price')    || {}).value || d.price    || '';
-  d.shop     = (document.getElementById('g-shop')     || {}).value || d.shop     || '';
-  d.memo     = (document.getElementById('g-memo')     || {}).value || d.memo     || '';
-  d.category = (document.getElementById('g-category') || {}).value || d.category || '';
-
-  if (!d.category) { showStatus('gear-status', 'カテゴリを選択してください', 'error'); return; }
-  d.id = Date.now();
-  state.data.gear.push(d);
-  saveAll();
-  // フィルタを保存したギアのsport/statusに合わせる
-  state.temp.gearSport  = d.sport;
-  state.temp.gearFilter = d.status;
-  goBack();
-}
-
-function openGearDetail(id) {
-  state.temp.viewGearId = id;
-  var g = state.data.gear.find(function(x){ return x.id == id; });
-  navigate('gear-detail', g ? (g.name || 'ギア詳細') : 'ギア詳細', 'ギア', false);
-}
-
-function renderGearDetail() {
-  var g = state.data.gear.find(function(x){ return x.id == state.temp.viewGearId; });
-  if (!g) return '<div class="empty-state">データが見つかりません</div>';
-  var cats = GEAR_CATEGORIES[g.sport] || GEAR_CATEGORIES.snowboard;
-  var cat = cats.find(function(c){ return c.key === g.category; }) || { icon: '📦', label: 'その他' };
-  var sportLabel = g.sport === 'ski' ? '⛷️ スキー' : '🏂 スノーボード';
-  var statusLabel = g.status === 'wishlist' ? '⭐ ほしいリスト' : '✅ 所持中';
-
-  return '<div class="hero-card" style="margin-top:16px">'
-    + '<div style="font-size:36px;margin-bottom:8px">' + cat.icon + '</div>'
-    + '<div class="hero-name">' + esc(g.name || cat.label) + '</div>'
-    + '<div class="hero-sub">' + esc(cat.label) + ' · ' + sportLabel + '</div>'
-    + '<div class="hero-tags">'
-    + '<span class="hero-tag">' + statusLabel + '</span>'
-    + (g.year ? '<span class="hero-tag">' + esc(g.year) + 'モデル</span>' : '')
-    + (g.size ? '<span class="hero-tag">' + esc(g.size) + '</span>' : '')
-    + '</div>'
-    + '</div>'
-
-    + '<div class="info-section">'
-    + infoRow('ブランド', g.brand)
-    + infoRow('モデル名', g.model)
-    + infoRow('サイズ', g.size)
-    + infoRow('年式', g.year ? g.year + 'モデル' : '')
-    + infoRow('価格', g.price ? '¥' + Number(g.price).toLocaleString() : '')
-    + infoRow('購入店', g.shop)
-    + '</div>'
-
-    + (g.memo ? '<div style="margin:12px 16px;background:var(--white);border-radius:12px;padding:14px 16px">'
-      + '<div style="font-size:13px;color:var(--text3);margin-bottom:6px">メモ</div>'
-      + '<div style="font-size:15px;color:var(--text);line-height:1.6">' + esc(g.memo) + '</div></div>' : '')
-
-    + '<button class="ios-btn btn-secondary" onclick="toggleGearStatus(' + g.id + ')">'
-    + (g.status === 'wishlist' ? '✅ 所持中に移動' : '⭐ ほしいリストに移動') + '</button>'
-    + '<button class="ios-btn btn-danger" onclick="deleteGear(' + g.id + ')">このギアを削除</button>';
-}
-
-function infoRow(key, val) {
-  if (!val) return '';
-  return '<div class="info-row"><span class="info-key">' + key + '</span><span class="info-val">' + esc(val) + '</span></div>';
-}
-
-function toggleGearStatus(id) {
-  var g = state.data.gear.find(function(x){ return x.id == id; });
-  if (!g) return;
-  g.status = g.status === 'wishlist' ? 'owned' : 'wishlist';
-  saveAll();
-  render();
-}
-
-function deleteGear(id) {
-  if (!confirm('このギアを削除しますか？')) return;
-  state.data.gear = state.data.gear.filter(function(x){ return x.id != id; });
-  saveAll();
-  goBack();
-}
-
-// ===== ユーティリティ =====
-function esc(str) {
-  return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
-function showStatus(id, msg, type) {
-  var el = document.getElementById(id);
-  if (!el) return;
-  el.style.color = type === 'error' ? 'var(--red)' : 'var(--green)';
-  el.textContent = msg;
-  setTimeout(function() { if (el) el.textContent = ''; }, 3000);
-}
-function openUrl(url) { window.open(url, '_blank'); }
+function togGS(id){ var g=S.data.gear.find(function(x){return x.id==id;});if(!g)return;g.status=g.status==='wishlist'?'owned':'wishlist';save();render(); }
+function delGear(id){ if(!confirm('削除しますか？'))return;S.data.gear=S.data.gear.filter(function(x){return x.id!=id;});save();goBack(); }
 
 // ===== 起動 =====
-loadAll();
-render();
+load(); render();
 </script>
 </body>
 </html>
