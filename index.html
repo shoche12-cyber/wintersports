@@ -1,162 +1,672 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
- <link rel="icon" href="favicon.ico" type="image/x-icon">
- <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="遠征プランナー">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
 <title>スノボ遠征プランナー</title>
 <style>
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-  html, body { height: 100%; background: #f2f2f7; font-family: -apple-system, 'Hiragino Sans', sans-serif; overscroll-behavior: none; }
-  :root {
-    --navy: #0a1628; --blue: #007aff; --blue-light: #e8f1ff;
-    --green: #34c759; --red: #ff3b30;
-    --gray2: #c7c7cc; --gray3: #f2f2f7; --gray4: #e5e5ea;
-    --white: #ffffff; --text: #000000; --text2: #3c3c43; --text3: #8e8e93;
-    --sep: rgba(60,60,67,0.12);
-    --tab-h: 83px; --safe-b: env(safe-area-inset-bottom,0px); --safe-t: env(safe-area-inset-top,44px);
-  }
-  #app { display:flex; flex-direction:column; height:100vh; overflow:hidden; }
+/* ===== Base ===== */
+*, *::before, *::after {
+  box-sizing: border-box; margin: 0; padding: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+html, body {
+  height: 100%;
+  font-family: -apple-system, 'SF Pro Display', 'Hiragino Sans', sans-serif;
+  background: #f2f2f7;
+  color: #1c1c1e;
+  overscroll-behavior: none;
+  -webkit-font-smoothing: antialiased;
+}
+:root {
+  --blue:    #007aff;
+  --blue-bg: #e8f1ff;
+  --green:   #34c759;
+  --red:     #ff3b30;
+  --label:   #1c1c1e;
+  --label2:  #3c3c43;
+  --label3:  #8e8e93;
+  --label4:  #c7c7cc;
+  --fill:    #f2f2f7;
+  --fill2:   #e5e5ea;
+  --fill3:   #d1d1d6;
+  --bg:      #ffffff;
+  --bg2:     #f2f2f7;
+  --sep:     rgba(60,60,67,0.13);
+  --sep-op:  #c6c6c8;
+  --r:       12px;
+  --tab-h:   49px;
+  --safe-t:  env(safe-area-inset-top, 44px);
+  --safe-b:  env(safe-area-inset-bottom, 0px);
+}
 
-  /* ナビバー */
-  .nav { background:rgba(255,255,255,0.92); backdrop-filter:saturate(180%) blur(20px); -webkit-backdrop-filter:saturate(180%) blur(20px); border-bottom:0.5px solid var(--sep); padding-top:var(--safe-t); flex-shrink:0; z-index:10; }
-  .nav-inner { height:44px; display:flex; align-items:center; justify-content:space-between; padding:0 16px; }
-  .nav-title { font-size:17px; font-weight:600; color:var(--text); }
-  .nav-btn { font-size:17px; color:var(--blue); background:none; border:none; cursor:pointer; padding:4px 0; font-family:inherit; }
-  .nav-back::before { content:'‹'; font-size:22px; margin-right:2px; }
+/* ===== Layout ===== */
+#app { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
 
-  /* コンテンツ */
-  .content { flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; }
-  .ci { padding-bottom:calc(var(--tab-h) + 8px); }
+/* ===== Navigation Bar ===== */
+.nav {
+  background: rgba(242,242,247,0.85);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border-bottom: 0.5px solid var(--sep);
+  padding-top: var(--safe-t);
+  flex-shrink: 0;
+  z-index: 100;
+}
+.nav-inner {
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+}
+.nav-title {
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--label);
+  letter-spacing: -0.01em;
+}
+.nav-btn {
+  font-size: 17px;
+  color: var(--blue);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px 0;
+  font-family: inherit;
+  font-weight: 400;
+  min-width: 44px;
+}
+.nav-btn-back {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+.nav-btn-back svg { flex-shrink: 0; }
 
-  /* タブバー */
-  .tabbar { position:fixed; bottom:0; left:0; right:0; height:var(--tab-h); background:rgba(255,255,255,0.92); backdrop-filter:saturate(180%) blur(20px); -webkit-backdrop-filter:saturate(180%) blur(20px); border-top:0.5px solid var(--sep); display:flex; z-index:100; padding-bottom:var(--safe-b); }
-  .tab { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; border:none; background:none; cursor:pointer; padding-top:8px; color:var(--gray2); font-family:inherit; }
-  .tab.on { color:var(--blue); }
-  .ti { font-size:24px; line-height:1; }
-  .tl { font-size:10px; font-weight:500; }
+/* ===== Content ===== */
+.content { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+.content::-webkit-scrollbar { display: none; }
+.ci { padding-bottom: calc(var(--tab-h) + var(--safe-b) + 20px); }
 
-  /* リスト */
-  .sec { margin:20px 16px 0; }
-  .sh { font-size:13px; color:var(--text3); margin-bottom:6px; padding:0 4px; text-transform:uppercase; letter-spacing:0.03em; }
-  .lg { background:var(--white); border-radius:12px; overflow:hidden; }
-  .lr { display:flex; align-items:center; min-height:44px; padding:10px 16px; border-bottom:0.5px solid var(--sep); gap:12px; cursor:pointer; -webkit-user-select:none; }
-  .lr:last-child { border-bottom:none; }
-  .lr:active { background:var(--gray3); }
-  .li { width:30px; height:30px; border-radius:7px; display:flex; align-items:center; justify-content:center; font-size:15px; flex-shrink:0; }
-  .lb { flex:1; min-width:0; }
-  .lt { font-size:17px; color:var(--text); }
-  .ls { font-size:13px; color:var(--text3); margin-top:1px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-  .cv { color:var(--gray2); font-size:18px; }
+/* ===== Tab Bar ===== */
+.tabbar {
+  position: fixed; bottom: 0; left: 0; right: 0;
+  background: rgba(242,242,247,0.92);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border-top: 0.5px solid var(--sep);
+  display: flex;
+  z-index: 100;
+  padding-bottom: var(--safe-b);
+  height: calc(var(--tab-h) + var(--safe-b));
+}
+.tab {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: var(--label3);
+  font-family: inherit;
+  padding-top: 6px;
+  padding-bottom: 2px;
+  transition: color 0.15s;
+}
+.tab.on { color: var(--blue); }
+.tab svg { display: block; }
+.tl {
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+}
 
-  /* ヒーローカード */
-  .hc { background:var(--navy); border-radius:16px; padding:20px; color:#fff; margin:16px; }
-  .hc.grn { background:linear-gradient(135deg,#1a472a,#2d6a4f); }
-  .hn { font-size:22px; font-weight:600; margin-bottom:3px; }
-  .hsub { font-size:14px; color:rgba(255,255,255,0.65); margin-bottom:14px; }
-  .htags { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:12px; }
-  .htag { font-size:12px; padding:3px 10px; border-radius:10px; background:rgba(255,255,255,0.18); color:rgba(255,255,255,0.95); }
-  .hstats { display:grid; grid-template-columns:repeat(3,1fr); border-top:0.5px solid rgba(255,255,255,0.2); padding-top:14px; }
-  .hst { text-align:center; }
-  .hst+.hst { border-left:0.5px solid rgba(255,255,255,0.2); }
-  .hstv { font-size:17px; font-weight:600; }
-  .hstl { font-size:11px; color:rgba(255,255,255,0.55); margin-top:2px; }
-  .hurl { display:flex; align-items:center; gap:8px; background:rgba(255,255,255,0.12); border-radius:10px; padding:10px 12px; margin-top:12px; cursor:pointer; }
-  .hurl span { font-size:13px; color:rgba(255,255,255,0.85); flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+/* ===== Inset List Group ===== */
+.sec { margin: 22px 0 0; }
+.sec-inset { margin: 22px 16px 0; }
+.sh {
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--label3);
+  margin-bottom: 8px;
+  padding: 0 16px;
+}
+.sh-inset { padding: 0; }
+.lg {
+  background: var(--bg);
+  border-radius: var(--r);
+  overflow: hidden;
+}
+.lr {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 10px 16px;
+  border-bottom: 0.5px solid var(--sep);
+  gap: 12px;
+  cursor: pointer;
+  -webkit-user-select: none;
+  transition: background 0.1s;
+  background: var(--bg);
+}
+.lr:last-child { border-bottom: none; }
+.lr:active { background: var(--fill); }
+.lb { flex: 1; min-width: 0; }
+.lt {
+  font-size: 17px;
+  color: var(--label);
+  letter-spacing: -0.01em;
+}
+.ls {
+  font-size: 13px;
+  color: var(--label3);
+  margin-top: 1px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.chevron-icon { color: var(--fill3); flex-shrink: 0; }
 
-  /* フォーム */
-  .fs { margin:16px 16px 0; }
-  .fg { background:var(--white); border-radius:12px; overflow:hidden; }
-  .fr { display:flex; align-items:center; min-height:44px; padding:0 16px; border-bottom:0.5px solid var(--sep); gap:12px; }
-  .fr:last-child { border-bottom:none; }
-  .fl { font-size:16px; color:var(--text); min-width:82px; flex-shrink:0; }
-  .fl.sm { font-size:14px; min-width:72px; }
-  .fr input, .fr select, .fr textarea { flex:1; border:none; outline:none; font-size:16px; color:var(--text); background:transparent; font-family:inherit; text-align:right; min-height:44px; -webkit-appearance:none; }
-  .fr input::placeholder { color:var(--gray2); }
-  .fr textarea { text-align:left; resize:none; padding:10px 0; min-height:72px; font-size:15px; }
-  .fu { font-size:14px; color:var(--text3); flex-shrink:0; }
+/* ===== List Item Icon ===== */
+.li-icon {
+  width: 29px; height: 29px;
+  border-radius: 7px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.li-label {
+  width: 38px; height: 38px;
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 700;
+  letter-spacing: 0.02em;
+  flex-shrink: 0;
+  background: var(--fill);
+  color: var(--label3);
+  flex-shrink: 0;
+}
 
-  /* チップ */
-  .cw { padding:10px 12px; display:flex; flex-wrap:wrap; gap:6px; min-height:44px; align-items:center; }
-  .chip { display:inline-flex; align-items:center; gap:6px; background:var(--blue-light); border-radius:16px; padding:5px 5px 5px 12px; font-size:14px; color:var(--blue); }
-  .cdel { width:20px; height:20px; border-radius:50%; background:rgba(0,122,255,0.2); color:var(--blue); display:flex; align-items:center; justify-content:center; font-size:13px; cursor:pointer; }
-  .ce { font-size:14px; color:var(--text3); }
+/* ===== Large Header (grouped list page top) ===== */
+.page-header {
+  padding: 12px 16px 4px;
+}
+.page-title {
+  font-size: 34px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  color: var(--label);
+  line-height: 1.1;
+}
+.page-sub {
+  font-size: 15px;
+  color: var(--label3);
+  margin-top: 4px;
+  font-weight: 400;
+}
 
-  /* ボタン */
-  .btn { display:block; width:calc(100% - 32px); margin:12px 16px; padding:14px; border:none; border-radius:12px; font-size:17px; font-weight:500; font-family:inherit; cursor:pointer; text-align:center; -webkit-appearance:none; }
-  .btn:active { opacity:0.75; }
-  .bp { background:var(--navy); color:#fff; }
-  .bs { background:var(--white); color:var(--blue); border:0.5px solid var(--sep); }
-  .bd { background:var(--white); color:var(--red); border:0.5px solid var(--sep); }
+/* ===== Summary Card ===== */
+.summary-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 10px;
+  margin: 16px 16px 0;
+}
+.summary-card {
+  background: var(--bg);
+  border-radius: var(--r);
+  padding: 14px 12px;
+}
+.sc-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--label3);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 4px;
+}
+.sc-value {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--label);
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+.sc-unit {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--label3);
+  margin-top: 3px;
+}
 
-  /* 情報行 */
-  .is { margin:12px 16px 0; background:var(--white); border-radius:12px; overflow:hidden; }
-  .ir { display:flex; justify-content:space-between; align-items:flex-start; padding:12px 16px; border-bottom:0.5px solid var(--sep); gap:12px; }
-  .ir:last-child { border-bottom:none; }
-  .ik { font-size:15px; color:var(--text3); flex-shrink:0; }
-  .iv { font-size:15px; color:var(--text); font-weight:500; text-align:right; flex:1; word-break:break-all; }
-  .iv.url { color:var(--blue); cursor:pointer; }
+/* ===== Detail Card (trip/resort hero) ===== */
+.detail-header {
+  background: var(--bg);
+  border-radius: var(--r);
+  margin: 16px 16px 0;
+  overflow: hidden;
+}
+.dh-top {
+  padding: 20px 20px 16px;
+  border-bottom: 0.5px solid var(--sep);
+}
+.dh-tag {
+  display: inline-flex;
+  align-items: center;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--blue);
+  background: var(--blue-bg);
+  border-radius: 6px;
+  padding: 3px 8px;
+  margin-bottom: 10px;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+.dh-name {
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--label);
+  line-height: 1.1;
+  margin-bottom: 4px;
+}
+.dh-sub {
+  font-size: 15px;
+  color: var(--label3);
+}
+.dh-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  background: var(--bg);
+}
+.dh-stat {
+  padding: 14px 0;
+  text-align: center;
+  border-right: 0.5px solid var(--sep);
+}
+.dh-stat:last-child { border-right: none; }
+.dh-stat-v {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--label);
+  letter-spacing: -0.02em;
+}
+.dh-stat-l {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--label3);
+  margin-top: 2px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
 
-  /* セグメント */
-  .seg { display:flex; background:var(--gray4); border-radius:9px; padding:2px; margin:0 16px 10px; }
-  .sb { flex:1; padding:7px; border:none; border-radius:7px; font-size:14px; font-family:inherit; cursor:pointer; color:var(--text3); background:transparent; }
-  .sb.on { background:var(--white); font-weight:600; color:var(--text); }
+/* ===== Tags ===== */
+.tags-wrap {
+  display: flex; flex-wrap: wrap; gap: 6px;
+  padding: 12px 16px 0;
+}
+.tag {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--blue);
+  background: var(--blue-bg);
+  border-radius: 8px;
+  padding: 4px 10px;
+}
 
-  /* 費用バー */
-  .cbr { padding:10px 16px; border-bottom:0.5px solid var(--sep); }
-  .cbr:last-child { border-bottom:none; }
-  .cbl { display:flex; justify-content:space-between; margin-bottom:5px; }
-  .cbn { font-size:14px; color:var(--text2); }
-  .cbv { font-size:14px; font-weight:500; }
-  .cbb { background:var(--gray3); border-radius:4px; height:6px; overflow:hidden; }
-  .cbf { height:6px; border-radius:4px; transition:width 0.3s; }
+/* ===== URL Row ===== */
+.url-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  border-top: 0.5px solid var(--sep);
+  cursor: pointer;
+  background: var(--bg);
+}
+.url-row:active { background: var(--fill); }
+.url-text {
+  font-size: 14px;
+  color: var(--blue);
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 
-  /* スケジュール */
-  .schl { background:var(--white); border-radius:12px; overflow:hidden; }
-  .schr { display:flex; gap:12px; padding:12px 16px; border-bottom:0.5px solid var(--sep); align-items:flex-start; }
-  .schr:last-child { border-bottom:none; }
-  .schd { width:40px; text-align:center; flex-shrink:0; }
-  .schdd { font-size:13px; font-weight:600; }
-  .schdw { font-size:11px; color:var(--text3); }
-  .schb { flex:1; }
-  .scht { font-size:15px; font-weight:500; }
-  .schs { font-size:13px; color:var(--text3); margin-top:1px; }
+/* ===== Form ===== */
+.form-sec { margin: 22px 16px 0; }
+.form-label {
+  font-size: 13px;
+  color: var(--label3);
+  margin-bottom: 8px;
+  font-weight: 400;
+}
+.fg {
+  background: var(--bg);
+  border-radius: var(--r);
+  overflow: hidden;
+}
+.fr {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 16px;
+  border-bottom: 0.5px solid var(--sep);
+  gap: 8px;
+}
+.fr:last-child { border-bottom: none; }
+.fl {
+  font-size: 17px;
+  color: var(--label);
+  min-width: 80px;
+  flex-shrink: 0;
+}
+.fl.sm { font-size: 15px; min-width: 72px; color: var(--label2); }
+.fr input, .fr select, .fr textarea {
+  flex: 1; border: none; outline: none;
+  font-size: 17px; color: var(--label);
+  background: transparent; font-family: inherit;
+  text-align: right; min-height: 44px;
+  -webkit-appearance: none;
+}
+.fr input::placeholder { color: var(--label4); }
+.fr textarea {
+  text-align: left; resize: none;
+  padding: 10px 0; min-height: 80px;
+  font-size: 15px; color: var(--label2);
+}
+.fr select { color: var(--label); }
+.fu { font-size: 15px; color: var(--label3); flex-shrink: 0; }
 
-  /* メンバーチップ */
-  .mc { display:inline-flex; align-items:center; gap:6px; background:var(--blue-light); border-radius:16px; padding:5px 5px 5px 12px; font-size:14px; color:var(--blue); margin:3px; }
-  .mcd { width:20px; height:20px; border-radius:50%; background:rgba(0,122,255,0.2); color:var(--blue); display:flex; align-items:center; justify-content:center; font-size:13px; cursor:pointer; }
+/* ===== Chips ===== */
+.cw {
+  padding: 10px 12px;
+  display: flex; flex-wrap: wrap; gap: 7px;
+  min-height: 44px; align-items: center;
+}
+.chip {
+  display: inline-flex; align-items: center; gap: 5px;
+  background: var(--blue-bg);
+  border-radius: 8px;
+  padding: 5px 6px 5px 10px;
+  font-size: 14px; color: var(--blue); font-weight: 500;
+}
+.cdel {
+  width: 18px; height: 18px; border-radius: 50%;
+  background: rgba(0,122,255,0.18);
+  color: var(--blue); display: flex; align-items: center;
+  justify-content: center; font-size: 11px; cursor: pointer;
+  font-weight: 700;
+}
+.ce { font-size: 14px; color: var(--label3); }
 
-  /* 空状態 */
-  .empty { text-align:center; padding:48px 24px; color:var(--text3); }
-  .eico { font-size:48px; margin-bottom:12px; }
-  .etit { font-size:17px; font-weight:500; color:var(--text2); margin-bottom:6px; }
-  .esub { font-size:14px; }
-  .sm-gap { height:12px; }
-  .status { text-align:center; font-size:14px; color:var(--green); padding:6px 16px; min-height:28px; }
+/* ===== Buttons ===== */
+.btn {
+  display: block;
+  width: calc(100% - 32px);
+  margin: 10px 16px;
+  padding: 14px;
+  border: none; border-radius: var(--r);
+  font-size: 17px; font-weight: 600;
+  font-family: inherit; cursor: pointer;
+  text-align: center; letter-spacing: -0.01em;
+  -webkit-appearance: none;
+  transition: opacity 0.12s;
+}
+.btn:active { opacity: 0.75; }
+.btn-first { margin-top: 16px; }
+.bp { background: var(--blue); color: #fff; }
+.bs { background: var(--fill); color: var(--blue); }
+.bd { background: var(--fill); color: var(--red); }
+
+.add-btn-wrap { padding: 16px 16px 0; }
+.add-btn {
+  width: 100%;
+  padding: 14px;
+  border: none; border-radius: var(--r);
+  font-size: 17px; font-weight: 600;
+  font-family: inherit; cursor: pointer;
+  background: var(--blue); color: #fff;
+  -webkit-appearance: none;
+}
+.add-btn:active { opacity: 0.8; }
+
+/* ===== Segment Control ===== */
+.seg-wrap { padding: 12px 16px 0; }
+.seg {
+  display: flex;
+  background: rgba(118,118,128,0.12);
+  border-radius: 9px;
+  padding: 2px;
+}
+.sb {
+  flex: 1; padding: 6px 4px;
+  border: none; border-radius: 7px;
+  font-size: 13px; font-weight: 500;
+  font-family: inherit; cursor: pointer;
+  color: var(--label2); background: transparent;
+  letter-spacing: -0.01em; transition: all 0.2s;
+}
+.sb.on {
+  background: var(--bg);
+  color: var(--label);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 0.5px 0 rgba(0,0,0,0.04);
+}
+
+/* ===== Info rows (detail pages) ===== */
+.info-group {
+  background: var(--bg);
+  border-radius: var(--r);
+  overflow: hidden;
+  margin: 0 16px;
+}
+.info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 12px 16px;
+  border-bottom: 0.5px solid var(--sep);
+  gap: 16px;
+}
+.info-row:last-child { border-bottom: none; }
+.ik { font-size: 15px; color: var(--label3); flex-shrink: 0; }
+.iv { font-size: 15px; color: var(--label); text-align: right; flex: 1; word-break: break-all; }
+.iv.blue { color: var(--blue); cursor: pointer; }
+
+/* ===== Cost Bars ===== */
+.cost-bar {
+  padding: 13px 16px;
+  border-bottom: 0.5px solid var(--sep);
+}
+.cost-bar:last-child { border-bottom: none; }
+.cost-bar-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 8px;
+}
+.cost-bar-label { font-size: 15px; color: var(--label2); }
+.cost-bar-val { font-size: 15px; font-weight: 600; color: var(--label); }
+.cost-bar-track {
+  height: 4px;
+  background: var(--fill2);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.cost-bar-fill { height: 4px; border-radius: 2px; }
+
+/* ===== Schedule ===== */
+.schedule-row {
+  display: flex; gap: 14px;
+  padding: 12px 16px;
+  border-bottom: 0.5px solid var(--sep);
+  align-items: flex-start;
+}
+.schedule-row:last-child { border-bottom: none; }
+.sched-date { width: 36px; flex-shrink: 0; text-align: center; }
+.sched-dd { font-size: 13px; font-weight: 600; color: var(--label2); }
+.sched-dw { font-size: 11px; color: var(--label3); }
+.sched-line {
+  width: 1px;
+  background: var(--fill2);
+  flex-shrink: 0;
+  margin-top: 4px;
+}
+.sched-body { flex: 1; }
+.sched-title { font-size: 15px; font-weight: 500; color: var(--label); }
+.sched-sub { font-size: 13px; color: var(--label3); margin-top: 1px; }
+
+/* ===== Member chips ===== */
+.member-wrap {
+  padding: 12px 14px;
+  display: flex; flex-wrap: wrap; gap: 6px;
+  min-height: 44px;
+}
+.mc {
+  font-size: 14px; font-weight: 500;
+  color: var(--label2);
+  background: var(--fill);
+  border-radius: 8px;
+  padding: 5px 12px;
+}
+
+/* ===== Gear Summary ===== */
+.gear-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin: 16px 16px 0;
+}
+.gear-card {
+  background: var(--bg);
+  border-radius: var(--r);
+  padding: 16px;
+}
+.gc-sport {
+  font-size: 11px; font-weight: 700;
+  color: var(--label3);
+  text-transform: uppercase; letter-spacing: 0.06em;
+  margin-bottom: 8px;
+}
+.gc-owned { font-size: 24px; font-weight: 700; color: var(--label); letter-spacing: -0.02em; }
+.gc-wish { font-size: 13px; color: var(--label3); margin-top: 2px; }
+
+/* ===== Set-to-trip row ===== */
+.assign-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 0.5px solid var(--sep);
+  cursor: pointer;
+  background: var(--bg);
+}
+.assign-row:last-child { border-bottom: none; }
+.assign-row:active { background: var(--fill); }
+.assign-name { font-size: 17px; color: var(--label); }
+.assign-action { font-size: 14px; font-weight: 600; }
+
+/* ===== Empty state ===== */
+.empty {
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 60px 24px;
+  text-align: center;
+}
+.empty-icon {
+  width: 56px; height: 56px;
+  background: var(--fill);
+  border-radius: 14px;
+  display: flex; align-items: center; justify-content: center;
+  margin-bottom: 16px;
+}
+.empty-title { font-size: 17px; font-weight: 600; color: var(--label2); margin-bottom: 6px; }
+.empty-sub { font-size: 15px; color: var(--label3); }
+
+/* ===== Misc ===== */
+.status { text-align: center; font-size: 14px; color: var(--green); padding: 8px 16px; min-height: 30px; }
+.gap-sm { height: 10px; }
+.gap-md { height: 20px; }
+.memo-block {
+  background: var(--bg);
+  border-radius: var(--r);
+  margin: 10px 16px 0;
+  padding: 14px 16px;
+}
+.memo-label { font-size: 13px; color: var(--label3); margin-bottom: 6px; }
+.memo-text { font-size: 15px; color: var(--label2); line-height: 1.6; }
 </style>
 </head>
 <body>
 <div id="app">
+
+  <!-- Navigation Bar -->
   <div class="nav">
     <div class="nav-inner">
-      <button class="nav-btn nav-back" id="bb" style="visibility:hidden" onclick="goBack()">戻る</button>
+      <button class="nav-btn nav-btn-back" id="bb" style="visibility:hidden" onclick="goBack()">
+        <svg width="10" height="17" viewBox="0 0 10 17" fill="none">
+          <path d="M8.5 1.5L1.5 8.5L8.5 15.5" stroke="#007aff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <span id="bb-label">戻る</span>
+      </button>
       <span class="nav-title" id="nt">遠征プランナー</span>
       <button class="nav-btn" id="rb" style="visibility:hidden" onclick="navRight()">保存</button>
     </div>
   </div>
-  <div class="content" id="ct"><div class="ci" id="ci"></div></div>
-  <div class="tabbar">
-    <button class="tab on" id="tab-trips"   onclick="sw('trips')">  <span class="ti">🗓</span> <span class="tl">遠征</span></button>
-    <button class="tab"    id="tab-resorts" onclick="sw('resorts')"><span class="ti">⛷️</span><span class="tl">ゲレンデ</span></button>
-    <button class="tab"    id="tab-cost"    onclick="sw('cost')">   <span class="ti">💰</span> <span class="tl">費用</span></button>
-    <button class="tab"    id="tab-gear"    onclick="sw('gear')">   <span class="ti">🎿</span> <span class="tl">ギア</span></button>
+
+  <!-- Content -->
+  <div class="content" id="ct">
+    <div class="ci" id="ci"></div>
   </div>
+
+  <!-- Tab Bar -->
+  <div class="tabbar">
+    <button class="tab on" id="tab-trips" onclick="sw('trips')">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+        <rect x="3" y="4" width="18" height="17" rx="2.5" stroke="currentColor" stroke-width="1.5"/>
+        <path d="M3 9h18" stroke="currentColor" stroke-width="1.5"/>
+        <path d="M8 2v4M16 2v4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        <rect x="7" y="13" width="3" height="3" rx="0.5" fill="currentColor"/>
+        <rect x="14" y="13" width="3" height="3" rx="0.5" fill="currentColor"/>
+      </svg>
+      <span class="tl">遠征</span>
+    </button>
+    <button class="tab" id="tab-resorts" onclick="sw('resorts')">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+        <path d="M3 20L9 10L14 16L18 11L21 20H3Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+        <circle cx="17" cy="6" r="2" stroke="currentColor" stroke-width="1.5"/>
+      </svg>
+      <span class="tl">ゲレンデ</span>
+    </button>
+    <button class="tab" id="tab-cost" onclick="sw('cost')">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+        <rect x="2" y="6" width="20" height="13" rx="2" stroke="currentColor" stroke-width="1.5"/>
+        <path d="M2 10h20" stroke="currentColor" stroke-width="1.5"/>
+        <circle cx="7" cy="15" r="1.5" fill="currentColor"/>
+      </svg>
+      <span class="tl">費用</span>
+    </button>
+    <button class="tab" id="tab-gear" onclick="sw('gear')">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+        <path d="M12 3L12 14M12 14L7 9M12 14L17 9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M5 17h14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        <path d="M5 20.5h14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-opacity="0.4"/>
+      </svg>
+      <span class="tl">ギア</span>
+    </button>
+  </div>
+
 </div>
 <script>
+
+
 // ===== STATE =====
 var S = {
   tab:'trips', screen:'main', stack:[],
@@ -195,7 +705,7 @@ function goBack() {
 function nb(title, backLbl, showBack, showRight, rightLbl) {
   document.getElementById('nt').textContent = title||'';
   var bb=document.getElementById('bb'), rb=document.getElementById('rb');
-  bb.style.visibility = showBack?'visible':'hidden'; bb.textContent = backLbl||'戻る';
+  bb.style.visibility = showBack?'visible':'hidden'; var bbl=document.getElementById('bb-label');if(bbl)bbl.textContent=backLbl||'戻る';
   rb.style.visibility = showRight?'visible':'hidden'; rb.textContent = rightLbl||'保存';
 }
 function navRight() {
@@ -232,7 +742,12 @@ function render() {
 function e(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 function st(id,msg,type){ var el=document.getElementById(id); if(!el)return; el.style.color=type==='err'?'var(--red)':'var(--green)'; el.textContent=msg; setTimeout(function(){if(el)el.textContent='';},3000); }
 function gv(id){ var el=document.getElementById(id); return el?el.value.trim():''; }
-function lr(icon,bg,title,sub,oc){ return '<div class="lr" onclick="'+oc+'"><div class="li" style="background:'+bg+'">'+icon+'</div><div class="lb"><div class="lt">'+e(title)+'</div>'+(sub?'<div class="ls">'+e(sub)+'</div>':'')+'</div><span class="cv">›</span></div>'; }
+function lr(icon,bg,title,sub,oc){
+  return '<div class="lr" onclick="'+oc+'">'
+    +'<div class="lb"><div class="lt">'+e(title)+'</div>'+(sub?'<div class="ls">'+e(sub)+'</div>':'')+'</div>'
+    +'<svg class="chevron-icon" width="8" height="13" viewBox="0 0 8 13" fill="none"><path d="M1 1l6 5.5L1 12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+    +'</div>';
+}
 function nights(s,en){ if(!s||!en)return''; var d=Math.round((new Date(en)-new Date(s))/86400000); return d>0?d+'泊'+(d+1)+'日':''; }
 function openUrl(url){ window.open(url,'_blank'); }
 
@@ -240,19 +755,19 @@ function openUrl(url){ window.open(url,'_blank'); }
 // 遠征
 // ===================================================
 function rTrips() {
-  var h='<div class="sec"><div class="sh">登録済み遠征</div>';
+  var h='<div class="page-header"><div class="page-title">遠征</div></div><div class="sec"><div class="sh">登録済み遠征</div>';
   if (!S.data.trips.length) {
-    h+='<div class="lg"><div class="empty"><div class="eico">🗓</div><div class="etit">遠征がありません</div><div class="esub">追加ボタンから登録しよう</div></div></div>';
+    h+='<div class="lg"><div class="empty"><div class="empty-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="17" rx="2.5" stroke="#c7c7cc" stroke-width="1.5"/><path d="M3 9h18" stroke="#c7c7cc" stroke-width="1.5"/></svg></div><div class="empty-title">遠征がありません</div><div class="empty-sub">追加ボタンから登録しよう</div></div></div>';
   } else {
     h+='<div class="lg">';
     S.data.trips.forEach(function(t){
       var r=S.data.resorts.find(function(x){return x.id==t.resortId;});
       var sub=(r?r.name:(t.resortName||'ゲレンデ未定'))+(nights(t.start,t.end)?' · '+nights(t.start,t.end):'')+(t.members&&t.members.length?' · '+t.members.length+'人':'');
-      h+=lr('🗓','#0a1628',t.name,sub,'openTripDetail('+t.id+')');
+      h+=lr('','',t.name,sub,'openTripDetail('+t.id+')');
     });
     h+='</div>';
   }
-  return h+'</div><div class="sm-gap"></div><button class="btn bp" onclick="openTripAdd()">＋ 新しい遠征を追加</button>';
+  return h+'</div><div class="add-btn-wrap"><button class="add-btn" onclick="openTripAdd()">＋ 新しい遠征を追加</button></div>';
 }
 
 function openTripAdd(){ S.tmp.tripMem=[]; nav('trip-add','新しい遠征','遠征',true,'保存'); }
@@ -263,14 +778,14 @@ function rTripAdd() {
   var chips=S.tmp.tripMem.length
     ? S.tmp.tripMem.map(function(m,i){return'<span class="chip">'+e(m)+'<span class="cdel" onclick="rmTM('+i+')">×</span></span>';}).join('')
     : '<span class="ce">まだいません</span>';
-  return '<div class="fs" style="margin-top:16px"><div class="sh">遠征情報</div><div class="fg">'
+  return '<div class="form-sec" style="margin-top:16px"><div class="form-label">遠征情報</div><div class="fg">'
     +'<div class="fr"><span class="fl">遠征名</span><input id="f-name" type="text" placeholder="例：白馬遠征" style="text-align:right"></div>'
     +'<div class="fr"><span class="fl">ゲレンデ</span><select id="f-resort">'+opts+'</select></div>'
     +'<div class="fr"><span class="fl">出発日</span><input id="f-start" type="date"></div>'
     +'<div class="fr"><span class="fl">帰着日</span><input id="f-end" type="date"></div>'
     +'<div class="fr"><span class="fl">予算/人</span><input id="f-budget" type="number" placeholder="60000" style="text-align:right"><span class="fu">円</span></div>'
     +'</div></div>'
-    +'<div class="fs" style="margin-top:12px"><div class="sh">メンバー</div><div class="fg">'
+    +'<div class="form-sec"><div class="form-label">メンバー</div><div class="fg">'
     +'<div class="cw" id="tm-chips">'+chips+'</div>'
     +'<div class="fr" style="border-top:0.5px solid var(--sep)"><input id="f-mem" type="text" placeholder="名前を入力..." style="flex:1;text-align:left"><button onclick="addTM()" style="background:var(--blue);color:#fff;border:none;border-radius:8px;padding:7px 14px;font-size:14px;font-family:inherit;cursor:pointer">追加</button></div>'
     +'</div></div><div class="status" id="ts"></div>';
@@ -297,18 +812,20 @@ function rTripDetail(){
   var sched='';
   if(t.start&&t.end){
     var s=new Date(t.start),en=new Date(t.end),nd=Math.round((en-s)/86400000),wd=['日','月','火','水','木','金','土'];
-    for(var i=0;i<=nd;i++){var d=new Date(s);d.setDate(d.getDate()+i);var lbl=(d.getMonth()+1)+'/'+d.getDate();var w=wd[d.getDay()];var tit=i===0?'移動日（出発）':i===nd?'帰宅日（移動）':(r?r.name+'　滑走':'滑走');var su=i===0?'新宿 → '+(r?r.name:'現地'):i===nd?'現地 → 帰宅':'終日滑走';sched+='<div class="schr"><div class="schd"><div class="schdd">'+lbl+'</div><div class="schdw">('+w+')</div></div><div class="schb"><div class="scht">'+tit+'</div><div class="schs">'+su+'</div></div></div>';}
+    for(var i=0;i<=nd;i++){var d=new Date(s);d.setDate(d.getDate()+i);var lbl=(d.getMonth()+1)+'/'+d.getDate();var w=wd[d.getDay()];var tit=i===0?'移動日（出発）':i===nd?'帰宅日（移動）':(r?r.name+'　滑走':'滑走');var su=i===0?'新宿 → '+(r?r.name:'現地'):i===nd?'現地 → 帰宅':'終日滑走';sched+='<div class="schedule-row"><div class="sched-date"><div class="sched-dd">'+lbl+'</div><div class="sched-dw">'+w+'</div></div><div class="sched-body"><div class="sched-title">'+tit+'</div><div class="sched-sub">'+su+'</div></div></div>';}
   }
-  var mems=(t.members&&t.members.length)?t.members.map(function(m){return'<span class="mc">'+e(m)+'</span>';}).join(''):'<span class="ce" style="padding:4px 0">未設定</span>';
-  return '<div class="hc"><div class="hn">'+e(t.name)+'</div>'
-    +'<div class="hsub">'+e(r?r.name:(t.resortName||'ゲレンデ未定'))+(ni?' · '+ni:'')+'</div>'
-    +'<div class="hstats"><div class="hst"><div class="hstv">'+(t.members?t.members.length:0)+'人</div><div class="hstl">メンバー</div></div>'
-    +'<div class="hst"><div class="hstv">'+(t.budget?'¥'+Math.round(t.budget/1000)+'k':'—')+'</div><div class="hstl">一人予算</div></div>'
-    +'<div class="hst"><div class="hstv">'+(ni||'—')+'</div><div class="hstl">日程</div></div></div></div>'
-    +(sched?'<div class="sec"><div class="sh">日程</div><div class="schl">'+sched+'</div></div>':'')
-    +'<div class="sec"><div class="sh">メンバー</div><div class="lg"><div style="padding:10px 12px;display:flex;flex-wrap:wrap">'+mems+'</div></div></div>'
-    +(r?'<div class="sec"><div class="sh">ゲレンデ</div><div class="lg">'+lr('⛷️','#0a1628',r.name,r.area||'','openResortFromTrip('+r.id+')')+'</div></div>':'')
-    +'<button class="btn bd" onclick="delTrip('+t.id+')">この遠征を削除</button>';
+  var mems=(t.members&&t.members.length)?t.members.map(function(m){return'<span class="mc">'+e(m)+'</span>';}).join(''):'<span class="ce" style="padding:8px 0;display:block">未設定</span>';
+  '<div class="detail-header">'
+    +'<div class="dh-top"><div class="dh-tag">遠征</div><div class="dh-name">'+e(t.name)+'</div><div class="dh-sub">'+e(r?r.name:(t.resortName||'ゲレンデ未定'))+(ni?' · '+ni:'')+'</div></div>'
+    +'<div class="dh-stats">'
+    +'<div class="dh-stat"><div class="dh-stat-v">'+(t.members?t.members.length:0)+'</div><div class="dh-stat-l">人</div></div>'
+    +'<div class="dh-stat"><div class="dh-stat-v">'+(t.budget?'¥'+Math.round(t.budget/1000)+'k':'—')+'</div><div class="dh-stat-l">予算/人</div></div>'
+    +'<div class="dh-stat"><div class="dh-stat-v">'+(ni||'—')+'</div><div class="dh-stat-l">日程</div></div>'
+    +'</div></div>'
+    +(sched?'<div class="sec"><div class="sh">日程</div><div class="lg" style="margin:0 16px">'+sched+'</div></div>':'')
+    +'<div class="sec"><div class="sh">メンバー</div><div class="lg" style="margin:0 16px"><div class="member-wrap">'+mems+'</div></div></div>'
+    +(r?'<div class="sec"><div class="sh">ゲレンデ</div><div class="lg" style="margin:0 16px">'+lr('','',r.name,r.area||'','openResortFromTrip('+r.id+')')+'</div></div>':'')
+    +'<button class="btn bd btn-first" onclick="delTrip('+t.id+')">この遠征を削除</button>';
 }
 
 function openResortFromTrip(id){ S.tmp.vResort=id;var r=S.data.resorts.find(function(x){return x.id==id;});nav('resort-detail',r?r.name:'ゲレンデ詳細','戻る',false); }
@@ -318,18 +835,18 @@ function delTrip(id){ if(!confirm('削除しますか？'))return;S.data.trips=S
 // ゲレンデ
 // ===================================================
 function rResorts(){
-  var h='<div class="sec"><div class="sh">お気に入りゲレンデ</div>';
+  var h='<div class="page-header"><div class="page-title">ゲレンデ</div></div><div class="sec"><div class="sh">お気に入りゲレンデ</div>';
   if(!S.data.resorts.length){
-    h+='<div class="lg"><div class="empty"><div class="eico">⛷️</div><div class="etit">ゲレンデがありません</div><div class="esub">追加ボタンから登録しよう</div></div></div>';
+    h+='<div class="lg"><div class="empty"><div class="empty-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M3 20L9 10L14 16L18 11L21 20H3Z" stroke="#c7c7cc" stroke-width="1.5" stroke-linejoin="round"/></svg></div><div class="empty-title">ゲレンデがありません</div><div class="empty-sub">追加ボタンから登録しよう</div></div></div>';
   } else {
     h+='<div class="lg">';
     S.data.resorts.forEach(function(r){
       var sub=(r.area||'')+(r.altitude_top?' · '+r.altitude_top:'')+(r.courses?' · '+r.courses:'');
-      h+=lr('⛷️','#0a1628',r.name,sub,'openResortDetail('+r.id+')');
+      h+=lr('','',r.name,sub,'openResortDetail('+r.id+')');
     });
     h+='</div>';
   }
-  return h+'</div><div class="sm-gap"></div><button class="btn bp" onclick="openResortAdd()">＋ ゲレンデを登録</button>';
+  return h+'</div><div class="add-btn-wrap"><button class="add-btn" onclick="openResortAdd()">＋ ゲレンデを登録</button></div>';
 }
 
 function openResortAdd(){ S.tmp.resortFeat=[]; nav('resort-add','ゲレンデを登録','ゲレンデ',true,'保存'); }
@@ -338,33 +855,33 @@ function rResortAdd(){
   var chips=S.tmp.resortFeat.length
     ? S.tmp.resortFeat.map(function(f,i){return'<span class="chip">'+e(f)+'<span class="cdel" onclick="rmFeat('+i+')">×</span></span>';}).join('')
     : '<span class="ce">未設定</span>';
-  return '<div class="fs" style="margin-top:16px"><div class="sh">基本情報</div><div class="fg">'
+  return '<div class="form-sec" style="margin-top:16px"><div class="form-label">基本情報</div><div class="fg">'
     +fr2('r-name',   'ゲレンデ名','text','例：白馬八方尾根')
     +fr2('r-area',   '都道府県',  'text','例：長野県')
     +fr2('r-region', '地域',      'text','例：白馬エリア')
     +fr2('r-url',    '公式サイト','url', 'https://')
     +'</div></div>'
-    +'<div class="fs" style="margin-top:12px"><div class="sh">営業情報</div><div class="fg">'
+    +'<div class="form-sec"><div class="form-label">営業情報</div><div class="fg">'
     +fr2('r-season','営業期間','text','例：12月上旬〜3月下旬')
     +fr2('r-hours', '営業時間','text','例：8:30〜16:30')
     +fr2('r-night', 'ナイター', 'text','例：〜20:00（土日のみ）')
     +'</div></div>'
-    +'<div class="fs" style="margin-top:12px"><div class="sh">コース情報</div><div class="fg">'
+    +'<div class="form-sec"><div class="form-label">コース情報</div><div class="fg">'
     +fr2('r-courses','コース数',  'text','例：47本')
     +fr2('r-lifts',  'リフト数',  'text','例：20本')
     +fr2('r-alt-top','最高標高',  'text','例：1,831m')
     +fr2('r-alt-base','麓標高',   'text','例：760m')
     +fr2('r-level',  '対象レベル','text','例：初〜上級')
     +'</div></div>'
-    +'<div class="fs" style="margin-top:12px"><div class="sh">特徴タグ</div><div class="fg">'
+    +'<div class="form-sec"><div class="form-label">特徴タグ</div><div class="fg">'
     +'<div class="cw" id="feat-chips">'+chips+'</div>'
     +'<div class="fr" style="border-top:0.5px solid var(--sep)"><input id="f-feat" type="text" placeholder="例：パウダー / オフピステ" style="flex:1;text-align:left"><button onclick="addFeat()" style="background:var(--blue);color:#fff;border:none;border-radius:8px;padding:7px 14px;font-size:14px;font-family:inherit;cursor:pointer">追加</button></div>'
     +'</div></div>'
-    +'<div class="fs" style="margin-top:12px"><div class="sh">メモ</div><div class="fg"><div class="fr"><textarea id="r-memo" placeholder="アクセス・おすすめポイントなど..."></textarea></div></div></div>'
+    +'<div class="form-sec"><div class="form-label">メモ</div><div class="fg"><div class="fr"><textarea id="r-memo" placeholder="アクセス・おすすめポイントなど..."></textarea></div></div></div>'
     +'<div class="status" id="rs"></div>';
 }
 
-function fr2(id,label,type,ph){ return '<div class="fr"><span class="fl sm">'+label+'</span><input id="'+id+'" type="'+type+'" placeholder="'+ph+'" style="text-align:right"></div>'; }
+function fr2(id,label,type,ph){ return '<div class="fr"><span class="fl sm">'+label+'</span><input id="'+id+'" type="'+type+'" placeholder="'+ph+'" style="text-align:right" inputmode="text"></div>'; }
 
 function addFeat(){ var inp=document.getElementById('f-feat');if(!inp)return;var v=inp.value.trim();if(!v)return;S.tmp.resortFeat.push(v);inp.value='';rfFeat(); }
 function rmFeat(i){ S.tmp.resortFeat.splice(i,1);rfFeat(); }
@@ -388,15 +905,15 @@ function rResortDetail(){
   var r=S.data.resorts.find(function(x){return x.id==S.tmp.vResort;});
   if(!r)return'<div class="empty">データなし</div>';
   var feats=(r.features||[]).map(function(f){return'<span class="htag">'+e(f)+'</span>';}).join('');
-  var h='<div class="hc" style="margin-top:16px"><div class="hn">'+e(r.name)+'</div>'
-    +'<div class="hsub">'+e((r.area||'')+(r.region?' · '+r.region:''))+'</div>'
-    +(feats?'<div class="htags">'+feats+'</div>':'')
-    +'<div class="hstats">'
-    +'<div class="hst"><div class="hstv">'+e(r.courses||'—')+'</div><div class="hstl">コース数</div></div>'
-    +'<div class="hst"><div class="hstv">'+e(r.lifts||'—')+'</div><div class="hstl">リフト数</div></div>'
-    +'<div class="hst"><div class="hstv">'+e(r.altitude_top||'—')+'</div><div class="hstl">最高標高</div></div>'
+  var h='<div class="detail-header">'
+    +'<div class="dh-top"><div class="dh-tag">ゲレンデ</div><div class="dh-name">'+e(r.name)+'</div><div class="dh-sub">'+e((r.area||'')+(r.region?' · '+r.region:''))+'</div></div>'
+    +'<div class="dh-stats">'
+    +'<div class="dh-stat"><div class="dh-stat-v">'+e(r.courses||'—')+'</div><div class="dh-stat-l">コース</div></div>'
+    +'<div class="dh-stat"><div class="dh-stat-v">'+e(r.lifts||'—')+'</div><div class="dh-stat-l">リフト</div></div>'
+    +'<div class="dh-stat"><div class="dh-stat-v">'+e(r.altitude_top||'—')+'</div><div class="dh-stat-l">標高</div></div>'
     +'</div>'
-    +(r.url?'<div class="hurl" onclick="openUrl(\''+e(r.url)+'\')"><span>🔗 '+e(r.url)+'</span><span style="color:rgba(255,255,255,0.6)">›</span></div>':'')
+    +(feats?'<div class="tags-wrap">'+feats+'</div>':'')
+    +(r.url?'<div class="url-row" onclick="openUrl(\''+e(r.url)+'\')"><span>'+e(r.url)+'</span><span style="color:rgba(255,255,255,0.6)">›</span></div>':'')
     +'</div>';
 
   // 営業情報
@@ -405,7 +922,7 @@ function rResortDetail(){
   if(r.hours)  opRows+=ir('営業時間',r.hours);
   if(r.night)  opRows+=ir('ナイター', r.night);
   if(!opRows)  opRows+=ir('営業情報','未設定');
-  h+='<div class="sec"><div class="sh">営業情報</div><div class="is" style="margin:0">'+opRows+'</div></div>';
+  h+='<div class="sec"><div class="sh">営業情報</div><div class="info-group">'+opRows+'</div></div>';
 
   // コース情報
   var crRows='';
@@ -415,29 +932,29 @@ function rResortDetail(){
   if(r.altitude_base) crRows+=ir('麓標高',    r.altitude_base);
   if(r.level)         crRows+=ir('対象レベル',r.level);
   if(!crRows)         crRows+=ir('コース情報','未設定');
-  h+='<div class="sec"><div class="sh">コース情報</div><div class="is" style="margin:0">'+crRows+'</div></div>';
+  h+='<div class="sec"><div class="sh">コース情報</div><div class="info-group">'+crRows+'</div></div>';
 
   // メモ
-  if(r.memo) h+='<div class="sec"><div class="sh">メモ</div><div class="lg"><div style="padding:12px 16px;font-size:15px;line-height:1.6">'+e(r.memo)+'</div></div></div>';
+  if(r.memo) h+='<div class="sec"><div class="sh">メモ</div><div class="memo-block" style="margin:0 16px">'+e(r.memo)+'</div></div>';
 
   // 遠征に設定
-  h+='<div class="sec"><div class="sh">この遠征に設定する</div><div class="lg">';
+  h+='<div class="sec"><div class="sh">この遠征に設定する</div><div class="info-group">';
   if(!S.data.trips.length){
-    h+='<div class="lr"><div class="lb"><div class="lt" style="color:var(--text3)">遠征が登録されていません</div></div></div>';
+    h+='<div class="info-row"><span class="iv" style="color:var(--label3);text-align:left">遠征が登録されていません</span></div>';
   } else {
     S.data.trips.forEach(function(t){
       var isSet=t.resortId==r.id;
-      h+='<div class="lr" onclick="setRT('+r.id+','+t.id+')">'
-        +'<div class="lb"><div class="lt">'+e(t.name)+'</div></div>'
-        +'<span style="font-size:14px;color:'+(isSet?'var(--green)':'var(--blue)')+';font-weight:500">'+(isSet?'✓ 設定済み':'設定する')+'</span></div>';
+      h+='<div class="set-row" onclick="setRT('+r.id+','+t.id+')">'
+        +'<span class="set-label">'+e(t.name)+'</span>'
+        +'<span class="set-action" style="color:'+(isSet?'var(--green)':'var(--ice)')+'">'+(isSet?'✓ 設定済み':'設定する')+'</span></div>';
     });
   }
   h+='</div></div>';
-  h+='<button class="btn bd" onclick="delResort('+r.id+')">登録を削除</button>';
+  h+='<button class="btn bd btn-first" onclick="delResort('+r.id+')">登録を削除</button>';
   return h;
 }
 
-function ir(k,v){ return '<div class="ir"><span class="ik">'+e(k)+'</span><span class="iv">'+e(v)+'</span></div>'; }
+function ir(k,v){ return '<div class="info-row"><span class="ik">'+e(k)+'</span><span class="iv">'+e(v)+'</span></div>'; }
 function setRT(rid,tid){
   var t=S.data.trips.find(function(x){return x.id==tid;}),r=S.data.resorts.find(function(x){return x.id==rid;});
   if(!t||!r)return; t.resortId=rid; t.resortName=r.name; save(); render();
@@ -453,64 +970,85 @@ function delResort(id){
 // 費用
 // ===================================================
 function rCost(){
+  var ph='<div class="page-header"><div class="page-title">費用</div></div>';
   var c=S.cost, lo=c.lodge*c.nights, li=c.lift*c.nights, fo=c.food*(c.nights+1), per=c.trans+lo+li+fo, mx=Math.max(c.trans,lo,li,fo,1);
-  return '<div class="fs" style="margin-top:16px"><div class="sh">入力</div><div class="fg">'
+  return ph+'<div class="sec"><div class="sh">入力</div><div class="lg" style="margin:0 16px">'
     +cr('c-members','人数','number',c.members,'人')+cr('c-nights','泊数','number',c.nights,'泊')
     +cr('c-trans','交通費','number',c.trans,'円/人')+cr('c-lodge','宿泊','number',c.lodge,'円/泊')
     +cr('c-lift','リフト券','number',c.lift,'円/日')+cr('c-food','食費','number',c.food,'円/日')
     +'</div></div>'
-    +'<div class="fs" style="margin-top:12px"><div class="sh">内訳（一人）</div><div class="lg">'
-    +cb('🚌 交通費',c.trans,mx,'#007aff')+cb('🏠 宿泊（'+c.nights+'泊）',lo,mx,'#5856d6')
-    +cb('🎫 リフト券（'+c.nights+'日）',li,mx,'#34c759')+cb('🍜 食費（'+(c.nights+1)+'日）',fo,mx,'#ff9500')
+    +'<div class="sec"><div class="sh">内訳（一人）</div><div class="lg" style="margin:0 16px">'
+    +cb('交通費',c.trans,mx,'#007aff',0)+cb('宿泊（'+c.nights+'泊）',lo,mx,'#5ac8fa',1)
+    +cb('リフト券（'+c.nights+'日）',li,mx,'#007aff',2)+cb('食費（'+(c.nights+1)+'日）',fo,mx,'#34aadc',3)
     +'</div></div>'
-    +'<div class="fs" style="margin-top:12px"><div class="sh">合計</div><div class="lg">'
-    +'<div class="fr"><span class="fl">一人当たり</span><span style="font-size:20px;font-weight:600">¥'+per.toLocaleString()+'</span></div>'
-    +'<div class="fr"><span class="fl">'+c.members+'人合計</span><span style="font-size:17px;font-weight:500">¥'+(per*c.members).toLocaleString()+'</span></div>'
+    +'<div class="sec"><div class="sh">合計</div><div class="lg" style="margin:0 16px">'
+    +'<div class="fr"><span class="fl">一人当たり</span><span id="cost-per" style="font-size:22px;font-weight:700;letter-spacing:-0.02em">¥'+per.toLocaleString()+'</span></div>'
+    +'<div class="fr"><span class="fl" id="cost-mem-lbl">'+c.members+'人合計</span><span id="cost-all" style="font-size:17px;font-weight:500">¥'+(per*c.members).toLocaleString()+'</span></div>'
     +'</div></div>';
 }
-function cr(id,lbl,type,val,unit){ return '<div class="fr"><span class="fl">'+lbl+'</span><input id="'+id+'" type="'+type+'" value="'+val+'" oninput="updCost()" style="text-align:right"><span class="fu">'+unit+'</span></div>'; }
-function cb(lbl,val,mx,col){ var p=Math.round(val/mx*92); return '<div class="cbr"><div class="cbl"><span class="cbn">'+lbl+'</span><span class="cbv">¥'+val.toLocaleString()+'</span></div><div class="cbb"><div class="cbf" style="width:'+p+'%;background:'+col+'"></div></div></div>'; }
+function cr(id,lbl,type,val,unit){ return '<div class="fr"><span class="fl">'+lbl+'</span><input id="'+id+'" type="'+type+'" value="'+val+'" oninput="updCost()" inputmode="numeric" style="text-align:right"><span class="fu">'+unit+'</span></div>'; }
+function cb(lbl,val,mx,col,idx){ var p=Math.round(val/mx*95); return '<div class="cost-bar"><div class="cost-bar-top"><span class="cost-bar-label" id="cost-bl-'+idx+'">'+lbl+'</span><span class="cost-bar-val" id="cost-bv-'+idx+'">¥'+val.toLocaleString()+'</span></div><div class="cost-bar-track"><div class="cost-bar-fill" id="cost-bf-'+idx+'" style="width:'+p+'%;background:'+col+'"></div></div></div>'; }
 function updCost(){
-  S.cost={members:parseInt(document.getElementById('c-members').value)||4,nights:parseInt(document.getElementById('c-nights').value)||3,trans:parseInt(document.getElementById('c-trans').value)||0,lodge:parseInt(document.getElementById('c-lodge').value)||0,lift:parseInt(document.getElementById('c-lift').value)||0,food:parseInt(document.getElementById('c-food').value)||0};
-  save(); document.getElementById('ci').innerHTML=rCost();
+  S.cost={
+    members:parseInt(document.getElementById('c-members').value)||4,
+    nights: parseInt(document.getElementById('c-nights').value)||3,
+    trans:  parseInt(document.getElementById('c-trans').value)||0,
+    lodge:  parseInt(document.getElementById('c-lodge').value)||0,
+    lift:   parseInt(document.getElementById('c-lift').value)||0,
+    food:   parseInt(document.getElementById('c-food').value)||0
+  };
+  save();
+  // DOMを丸替えせず結果部分だけ更新（キーボードが閉じるのを防ぐ）
+  var c=S.cost,lo=c.lodge*c.nights,li=c.lift*c.nights,fo=c.food*(c.nights+1),per=c.trans+lo+li+fo,mx=Math.max(c.trans,lo,li,fo,1);
+  var labels=['交通費','宿泊（'+c.nights+'泊）','リフト券（'+c.nights+'日）','食費（'+(c.nights+1)+'日）'];
+  var vals=[c.trans,lo,li,fo];
+  vals.forEach(function(v,i){
+    var bv=document.getElementById('cost-bv-'+i); if(bv) bv.textContent='¥'+v.toLocaleString();
+    var bf=document.getElementById('cost-bf-'+i); if(bf) bf.style.width=Math.round(v/mx*92)+'%';
+    var bl=document.getElementById('cost-bl-'+i); if(bl) bl.textContent=labels[i];
+  });
+  var ep=document.getElementById('cost-per'); if(ep) ep.textContent='¥'+per.toLocaleString();
+  var ea=document.getElementById('cost-all'); if(ea) ea.textContent='¥'+(per*c.members).toLocaleString();
+  var em=document.getElementById('cost-mem-lbl'); if(em) em.textContent=c.members+'人合計';
 }
 
 // ===================================================
 // ギア
 // ===================================================
 var GC = {
-  snowboard:[{key:'board',label:'板',icon:'🏂'},{key:'boots',label:'ブーツ',icon:'👢'},{key:'binding',label:'ビンディング',icon:'🔩'},{key:'wear_top',label:'ウェア（上）',icon:'🧥'},{key:'wear_btm',label:'ウェア（下）',icon:'👖'},{key:'helmet',label:'ヘルメット',icon:'⛑'},{key:'goggles',label:'ゴーグル',icon:'🥽'},{key:'gloves',label:'グローブ',icon:'🧤'},{key:'protector',label:'プロテクター',icon:'🛡'},{key:'bag',label:'バッグ',icon:'🎒'},{key:'other',label:'その他',icon:'📦'}],
-  ski:[{key:'board',label:'板',icon:'⛷️'},{key:'boots',label:'ブーツ',icon:'👢'},{key:'stock',label:'ストック',icon:'🪄'},{key:'binding',label:'ビンディング',icon:'🔩'},{key:'wear_top',label:'ウェア（上）',icon:'🧥'},{key:'wear_btm',label:'ウェア（下）',icon:'👖'},{key:'helmet',label:'ヘルメット',icon:'⛑'},{key:'goggles',label:'ゴーグル',icon:'🥽'},{key:'gloves',label:'グローブ',icon:'🧤'},{key:'bag',label:'バッグ',icon:'🎒'},{key:'other',label:'その他',icon:'📦'}]
+  snowboard:[{key:'board',label:'板',icon:'SB'},{key:'boots',label:'ブーツ',icon:'BT'},{key:'binding',label:'ビンディング',icon:'BD'},{key:'wear_top',label:'ウェア（上）',icon:'WT'},{key:'wear_btm',label:'ウェア（下）',icon:'WB'},{key:'helmet',label:'ヘルメット',icon:'HM'},{key:'goggles',label:'ゴーグル',icon:'GG'},{key:'gloves',label:'グローブ',icon:'GL'},{key:'protector',label:'プロテクター',icon:'PT'},{key:'bag',label:'バッグ',icon:'BG'},{key:'other',label:'その他',icon:'OT'}],
+  ski:[{key:'board',label:'板',icon:'SK'},{key:'boots',label:'ブーツ',icon:'BT'},{key:'stock',label:'ストック',icon:'ST'},{key:'binding',label:'ビンディング',icon:'BD'},{key:'wear_top',label:'ウェア（上）',icon:'WT'},{key:'wear_btm',label:'ウェア（下）',icon:'WB'},{key:'helmet',label:'ヘルメット',icon:'HM'},{key:'goggles',label:'ゴーグル',icon:'GG'},{key:'gloves',label:'グローブ',icon:'GL'},{key:'bag',label:'バッグ',icon:'BG'},{key:'other',label:'その他',icon:'OT'}]
 };
 
 function rGear(){
+  var ph='<div class="page-header"><div class="page-title">ギア</div></div>';
   var f=S.tmp.gearFilter,sp=S.tmp.gearSport;
   var filt=S.data.gear.filter(function(g){return g.status===f&&g.sport===sp;});
   var oSB=S.data.gear.filter(function(g){return g.status==='owned'&&g.sport==='snowboard';}).length;
   var wSB=S.data.gear.filter(function(g){return g.status==='wishlist'&&g.sport==='snowboard';}).length;
   var oSK=S.data.gear.filter(function(g){return g.status==='owned'&&g.sport==='ski';}).length;
   var wSK=S.data.gear.filter(function(g){return g.status==='wishlist'&&g.sport==='ski';}).length;
-  var h='<div style="margin:16px;display:grid;grid-template-columns:1fr 1fr;gap:10px">'
-    +gsc('🏂 スノーボード',oSB+'点所持',wSB+'点ほしい','#0a1628')
-    +gsc('⛷️ スキー',oSK+'点所持',wSK+'点ほしい','#1a472a')
+  var h=ph+'<div class="gear-grid">'
+    +gsc('スノーボード',oSB+'点所持',wSB+'点ほしい')
+    +gsc('スキー',oSK+'点所持',wSK+'点ほしい')
     +'</div>'
-    +'<div class="seg">'+sgb("setGS('snowboard')","🏂 スノーボード",sp==='snowboard')+sgb("setGS('ski')","⛷️ スキー",sp==='ski')+'</div>'
-    +'<div class="seg">'+sgb("setGF('owned')","✅ 所持中",f==='owned')+sgb("setGF('wishlist')","⭐ ほしいリスト",f==='wishlist')+'</div>';
+    +'<div class="seg" style="margin-top:16px">'+sgb("setGS('snowboard')","スノーボード",sp==='snowboard')+sgb("setGS('ski')","スキー",sp==='ski')+'</div></div>'
+    +'<div class="seg-wrap"><div class="seg">'+sgb("setGF('owned')","所持中",f==='owned')+sgb("setGF('wishlist')","ほしいリスト",f==='wishlist')+'</div></div>';
   if(!filt.length){
-    h+='<div class="lg" style="margin:0 16px"><div class="empty" style="padding:32px 16px"><div class="eico">'+(f==='owned'?'🎿':'⭐')+'</div><div class="etit">'+(f==='owned'?'まだ登録されていません':'ほしいギアがありません')+'</div><div class="esub">追加ボタンから登録しよう</div></div></div>';
+    h+='<div class="lg" style="margin:0 20px"><div class="empty" style="padding:32px 16px"><div class="eico">'+''+'</div><div class="etit">'+(f==='owned'?'まだ登録されていません':'ほしいギアがありません')+'</div><div class="esub">追加ボタンから登録しよう</div></div></div>';
   } else {
-    h+='<div class="lg" style="margin:0 16px">';
+    h+='<div class="lg" style="margin:0 20px">';
     filt.forEach(function(g){
-      var cats=GC[g.sport]||GC.snowboard,cat=cats.find(function(c){return c.key===g.category;})||{icon:'📦',label:'その他'};
+      var cats=GC[g.sport]||GC.snowboard,cat=cats.find(function(c){return c.key===g.category;})||{icon:'OT',label:'その他'};
       var sub=[g.brand,g.model,g.year?g.year+'モデル':'',g.price?'¥'+Number(g.price).toLocaleString():''].filter(Boolean).join(' · ');
-      h+='<div class="lr" onclick="openGD('+g.id+')"><div class="li" style="background:'+(g.sport==='snowboard'?'#0a1628':'#1a472a')+'">'+cat.icon+'</div><div class="lb"><div class="lt">'+e(g.name||(cat.label+'（未設定）'))+'</div>'+(sub?'<div class="ls">'+e(sub)+'</div>':'')+'</div><span class="cv">›</span></div>';
+      h+='<div class="lr" onclick="openGD('+g.id+')"><div class="li-label">'+cat.label+'</div><div class="lb"><div class="lt">'+e(g.name||(cat.label+'（未設定）'))+'</div>'+(sub?'<div class="ls">'+e(sub)+'</div>':'')+'</div><span class="cv">›</span></div>';
     });
     h+='</div>';
   }
-  return h+'<div class="sm-gap"></div><button class="btn bp" onclick="openGA()">＋ ギアを追加</button>';
+  return h+'<div class="add-btn-wrap"><button class="add-btn" onclick="openGA()">ギアを追加</button></div>';
 }
 
-function gsc(t,l1,l2,bg){ return '<div style="background:'+bg+';border-radius:12px;padding:14px;color:#fff"><div style="font-size:12px;color:rgba(255,255,255,0.6);margin-bottom:6px">'+t+'</div><div style="font-size:17px;font-weight:600">'+l1+'</div><div style="font-size:13px;color:rgba(255,255,255,0.55);margin-top:2px">'+l2+'</div></div>'; }
+function gsc(t,l1,l2){ return '<div class="gear-card"><div class="gc-sport">'+t+'</div><div class="gc-owned">'+l1+'</div><div class="gc-wish">'+l2+'</div></div>'; }
 function sgb(oc,lbl,on){ return '<button onclick="'+oc+'" class="sb'+(on?' on':'')+'">'+lbl+'</button>'; }
 function setGF(f){ S.tmp.gearFilter=f; render(); }
 function setGS(s){ S.tmp.gearSport=s;  render(); }
@@ -520,10 +1058,10 @@ function openGA(){ S.tmp.gearDraft={sport:S.tmp.gearSport||'snowboard',status:S.
 function rGearAdd(){
   var d=S.tmp.gearDraft||{},sp=d.sport||'snowboard',cats=GC[sp];
   var opts='<option value="">選択してください</option>';
-  cats.forEach(function(c){ opts+='<option value="'+c.key+'"'+(d.category===c.key?' selected':'')+'>'+c.icon+' '+c.label+'</option>'; });
-  return '<div class="fs" style="margin-top:16px">'
-    +'<div class="seg">'+sgb("gdSp('snowboard')","🏂 スノーボード",sp==='snowboard')+sgb("gdSp('ski')","⛷️ スキー",sp==='ski')+'</div>'
-    +'<div class="seg">'+sgb("gdSt('owned')","✅ 所持中",d.status!=='wishlist')+sgb("gdSt('wishlist')","⭐ ほしいリスト",d.status==='wishlist')+'</div>'
+  cats.forEach(function(c){ opts+='<option value="'+c.key+'"'+(d.category===c.key?' selected':'')+'>'+c.label+'</option>'; });
+  return '<div class="seg-wrap" style="margin-top:16px"><div class="seg">'+sgb("gdSp('snowboard')","スノーボード",sp==='snowboard')+sgb("gdSp('ski')","スキー",sp==='ski')+'</div></div>'
+    +'<div class="seg-wrap"><div class="seg">'+sgb("gdSt('owned')","所持中",d.status!=='wishlist')+sgb("gdSt('wishlist')","ほしいリスト",d.status==='wishlist')+'</div></div>'
+    +'<div class="form-sec">'
     +'<div class="fg">'
     +'<div class="fr"><span class="fl">カテゴリ</span><select id="g-cat" onchange="S.tmp.gearDraft.category=this.value">'+opts+'</select></div>'
     +'<div class="fr"><span class="fl">名前</span><input id="g-name" type="text" placeholder="例：Custom X" value="'+e(d.name||'')+'" style="text-align:right"></div>'
@@ -565,20 +1103,20 @@ function openGD(id){ S.tmp.vGear=id;var g=S.data.gear.find(function(x){return x.
 function rGearDetail(){
   var g=S.data.gear.find(function(x){return x.id==S.tmp.vGear;});
   if(!g)return'<div class="empty">データなし</div>';
-  var cats=GC[g.sport]||GC.snowboard,cat=cats.find(function(c){return c.key===g.category;})||{icon:'📦',label:'その他'};
+  var cats=GC[g.sport]||GC.snowboard,cat=cats.find(function(c){return c.key===g.category;})||{icon:'OT',label:'その他'};
   return '<div class="hc" style="margin-top:16px">'
-    +'<div style="font-size:36px;margin-bottom:8px">'+cat.icon+'</div>'
+    
     +'<div class="hn">'+e(g.name||cat.label)+'</div>'
-    +'<div class="hsub">'+e(cat.label)+' · '+(g.sport==='ski'?'⛷️ スキー':'🏂 スノーボード')+'</div>'
-    +'<div class="htags"><span class="htag">'+(g.status==='wishlist'?'⭐ ほしいリスト':'✅ 所持中')+'</span>'
+    +'<div class="hsub">'+e(cat.label)+' · '+(g.sport==='ski'?'スキー':'スノーボード')+'</div>'
+    +'<div class="htags"><span class="htag">'+(g.status==='wishlist'?'ほしいリスト':'所持中')+'</span>'
     +(g.year?'<span class="htag">'+e(g.year)+'モデル</span>':'')+(g.size?'<span class="htag">'+e(g.size)+'</span>':'')+'</div></div>'
-    +'<div class="is">'
+    +'<div class="info-group" style="margin:16px 16px 0">'
     +(g.brand?ir('ブランド',g.brand):'')+(g.model?ir('モデル名',g.model):'')
     +(g.size?ir('サイズ',g.size):'')+(g.year?ir('年式',g.year+'モデル'):'')
     +(g.price?ir('価格','¥'+Number(g.price).toLocaleString()):'')+(g.shop?ir('購入店',g.shop):'')
     +'</div>'
-    +(g.memo?'<div style="margin:12px 16px 0;background:var(--white);border-radius:12px;padding:14px 16px"><div style="font-size:13px;color:var(--text3);margin-bottom:6px">メモ</div><div style="font-size:15px;line-height:1.6">'+e(g.memo)+'</div></div>':'')
-    +'<button class="btn bs" onclick="togGS('+g.id+')">'+(g.status==='wishlist'?'✅ 所持中に移動':'⭐ ほしいリストに移動')+'</button>'
+    +(g.memo?'<div class="memo-block">'+e(g.memo)+'</div>':'')
+    +'<button class="btn bs btn-first" onclick="togGS('+g.id+')">'+(g.status==='wishlist'?'所持中に移動':'ほしいリストに移動')+'</button>'
     +'<button class="btn bd" onclick="delGear('+g.id+')">このギアを削除</button>';
 }
 function togGS(id){ var g=S.data.gear.find(function(x){return x.id==id;});if(!g)return;g.status=g.status==='wishlist'?'owned':'wishlist';save();render(); }
@@ -586,6 +1124,8 @@ function delGear(id){ if(!confirm('削除しますか？'))return;S.data.gear=S.
 
 // ===== 起動 =====
 load(); render();
+
+
 </script>
 </body>
 </html>
