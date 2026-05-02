@@ -173,7 +173,22 @@ html, body {
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.chevron-icon { color: var(--fill3); flex-shrink: 0; }
+.chevron-icon {
+  display: inline-block;
+  width: 8px; height: 13px;
+  flex-shrink: 0;
+  position: relative;
+}
+.chevron-icon::after {
+  content: '';
+  position: absolute;
+  top: 50%; left: 0;
+  width: 7px; height: 7px;
+  border-right: 1.5px solid var(--fill3);
+  border-top: 1.5px solid var(--fill3);
+  transform: translateY(-50%) rotate(45deg);
+  margin-top: -1px;
+}
 
 /* ===== List Item Icon ===== */
 .li-icon {
@@ -590,6 +605,57 @@ html, body {
 .empty-title { font-size: 17px; font-weight: 600; color: var(--label2); margin-bottom: 6px; }
 .empty-sub { font-size: 15px; color: var(--label3); }
 
+/* ===== Set-to-trip row ===== */
+.set-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 0.5px solid var(--sep);
+  cursor: pointer;
+  background: var(--bg);
+}
+.set-row:last-child { border-bottom: none; }
+.set-row:active { background: var(--fill); }
+.set-label { font-size: 17px; color: var(--label); }
+.set-action { font-size: 14px; font-weight: 600; }
+
+/* ===== Action Sheet ===== */
+.as-overlay {
+  position: fixed; inset: 0; z-index: 999;
+  background: rgba(0,0,0,0.4);
+  display: flex; align-items: flex-end;
+  animation: as-fade-in 0.18s ease;
+}
+@keyframes as-fade-in { from { opacity:0; } to { opacity:1; } }
+.as-sheet {
+  width: 100%;
+  padding: 0 8px calc(var(--safe-b) + 8px);
+  animation: as-slide-up 0.22s cubic-bezier(0.34,1.2,0.64,1);
+}
+@keyframes as-slide-up { from { transform:translateY(60px); opacity:0; } to { transform:translateY(0); opacity:1; } }
+.as-group {
+  background: rgba(255,255,255,0.98);
+  border-radius: 14px;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+.as-title-row {
+  padding: 14px 16px 10px;
+  text-align: center;
+  border-bottom: 0.5px solid var(--sep);
+}
+.as-title-text { font-size: 13px; color: var(--label3); }
+.as-btn {
+  display: block; width: 100%;
+  padding: 17px 16px;
+  border: none; border-top: 0.5px solid var(--sep);
+  background: transparent;
+  font-size: 17px; font-family: inherit; cursor: pointer;
+  text-align: center; -webkit-appearance: none;
+}
+.as-btn:active { background: var(--fill); }
+.as-btn-destructive { color: var(--red); }
+.as-btn-cancel { color: var(--blue); font-weight: 600; }
+
 /* ===== Misc ===== */
 .status { text-align: center; font-size: 14px; color: var(--green); padding: 8px 16px; min-height: 30px; }
 .gap-sm { height: 10px; }
@@ -643,7 +709,7 @@ html, body {
         <path d="M3 20L9 10L14 16L18 11L21 20H3Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
         <circle cx="17" cy="6" r="2" stroke="currentColor" stroke-width="1.5"/>
       </svg>
-      <span class="tl">ゲレンデ</span>
+      <span class="tl">スキー場</span>
     </button>
     <button class="tab" id="tab-cost" onclick="sw('cost')">
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
@@ -671,17 +737,29 @@ html, body {
 var S = {
   tab:'trips', screen:'main', stack:[],
   data:{ trips:[], resorts:[], gear:[] },
-  tmp:{ tripMem:[], resortFeat:[], gearDraft:null, gearFilter:'owned', gearSport:'snowboard', vTrip:null, vResort:null, vGear:null },
+  tmp:{ tripMem:[], tripResorts:[], resortFeat:[], gearDraft:null, gearFilter:'owned', gearSport:'snowboard', vTrip:null, vResort:null, vGear:null },
   cost:{ members:4, nights:3, trans:12000, lodge:9000, lift:8000, food:3000 }
 };
-var TITLES = { trips:'遠征プランナー', resorts:'お気に入りゲレンデ', cost:'費用シミュレーター', gear:'ギア管理' };
+var TITLES = { trips:'遠征プランナー', resorts:'お気に入りスキー場', cost:'費用シミュレーター', gear:'ギア管理' };
 
 // ===== STORAGE =====
 function save() { try { localStorage.setItem('snb-v4', JSON.stringify({data:S.data,cost:S.cost})); } catch(e){} }
 function load() {
   try {
     var d = JSON.parse(localStorage.getItem('snb-v4') || localStorage.getItem('snb-planner-v3') || '{}');
-    if (d.data) { S.data = d.data; if (!S.data.gear) S.data.gear = []; if (!S.data.resorts) S.data.resorts = []; if (!S.data.trips) S.data.trips = []; }
+    if (d.data) {
+      S.data = d.data;
+      if (!S.data.gear) S.data.gear = [];
+      if (!S.data.resorts) S.data.resorts = [];
+      if (!S.data.trips) S.data.trips = [];
+      // マイグレーション: resortId(単数) → resortIds(配列)
+      S.data.trips.forEach(function(t){
+        if (!t.resortIds) {
+          t.resortIds = t.resortId ? [String(t.resortId)] : [];
+          delete t.resortId;
+        }
+      });
+    }
     if (d.cost) S.cost = d.cost;
     if (d.costCalc) S.cost = d.costCalc;
   } catch(e) {}
@@ -710,7 +788,9 @@ function nb(title, backLbl, showBack, showRight, rightLbl) {
 }
 function navRight() {
   if (S.screen==='trip-add')    saveTrip();
+  else if (S.screen==='trip-edit')   saveTripEdit();
   else if (S.screen==='resort-add')  saveResort();
+  else if (S.screen==='resort-edit') saveResortEdit();
   else if (S.screen==='gear-add')    saveGear();
 }
 function sw(tab) {
@@ -731,8 +811,10 @@ function render() {
     else if (S.tab==='gear')    h=rGear();
   } else if (S.screen==='trip-add')     h=rTripAdd();
   else if (S.screen==='trip-detail')    h=rTripDetail();
+  else if (S.screen==='trip-edit')      h=rTripEdit();
   else if (S.screen==='resort-add')     h=rResortAdd();
   else if (S.screen==='resort-detail')  h=rResortDetail();
+  else if (S.screen==='resort-edit')    h=rResortEdit();
   else if (S.screen==='gear-add')       h=rGearAdd();
   else if (S.screen==='gear-detail')    h=rGearDetail();
   document.getElementById('ci').innerHTML = h;
@@ -745,7 +827,7 @@ function gv(id){ var el=document.getElementById(id); return el?el.value.trim():'
 function lr(icon,bg,title,sub,oc){
   return '<div class="lr" onclick="'+oc+'">'
     +'<div class="lb"><div class="lt">'+e(title)+'</div>'+(sub?'<div class="ls">'+e(sub)+'</div>':'')+'</div>'
-    +'<svg class="chevron-icon" width="8" height="13" viewBox="0 0 8 13" fill="none"><path d="M1 1l6 5.5L1 12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+    +'<span class="chevron-icon" aria-hidden="true"></span>'
     +'</div>';
 }
 function nights(s,en){ if(!s||!en)return''; var d=Math.round((new Date(en)-new Date(s))/86400000); return d>0?d+'泊'+(d+1)+'日':''; }
@@ -761,8 +843,10 @@ function rTrips() {
   } else {
     h+='<div class="lg">';
     S.data.trips.forEach(function(t){
-      var r=S.data.resorts.find(function(x){return x.id==t.resortId;});
-      var sub=(r?r.name:(t.resortName||'ゲレンデ未定'))+(nights(t.start,t.end)?' · '+nights(t.start,t.end):'')+(t.members&&t.members.length?' · '+t.members.length+'人':'');
+      var resortObjs=(t.resortIds||[]).map(function(rid){ return S.data.resorts.find(function(x){return String(x.id)===String(rid);}); }).filter(Boolean);
+  var r=resortObjs[0]||null;
+      var rnames=(t.resortIds||[]).map(function(rid){var rv=S.data.resorts.find(function(x){return String(x.id)===String(rid);});return rv?rv.name:null;}).filter(Boolean);
+      var sub=(rnames.length?rnames.join(' · '):'スキー場未定')+(nights(t.start,t.end)?' · '+nights(t.start,t.end):'')+(t.members&&t.members.length?' · '+t.members.length+'人':'');
       h+=lr('','',t.name,sub,'openTripDetail('+t.id+')');
     });
     h+='</div>';
@@ -770,17 +854,62 @@ function rTrips() {
   return h+'</div><div class="add-btn-wrap"><button class="add-btn" onclick="openTripAdd()">＋ 新しい遠征を追加</button></div>';
 }
 
-function openTripAdd(){ S.tmp.tripMem=[]; nav('trip-add','新しい遠征','遠征',true,'保存'); }
+
+// ===== スキー場複数選択UI =====
+function renderResortChips() {
+  var html = '';
+  // 選択済みスキー場チップ
+  if (S.tmp.tripResorts.length) {
+    html += '<div class="cw" id="trip-resort-chips">';
+    S.tmp.tripResorts.forEach(function(rid, i) {
+      var r = S.data.resorts.find(function(x){ return String(x.id)===String(rid); });
+      var name = r ? r.name : '不明';
+      html += '<span class="chip">'+e(name)+'<span class="cdel" onclick="rmTripResort('+i+')">×</span></span>';
+    });
+    html += '</div>';
+  } else {
+    html += '<div class="cw" id="trip-resort-chips"><span class="ce">未選択</span></div>';
+  }
+  // スキー場追加セレクト
+  var opts = '<option value="">スキー場を選択...</option>';
+  S.data.resorts.forEach(function(r){
+    if (S.tmp.tripResorts.indexOf(String(r.id)) === -1) {
+      opts += '<option value="'+r.id+'">'+e(r.name)+'</option>';
+    }
+  });
+  html += '<div class="fr" style="border-top:0.5px solid var(--sep)">'
+    + '<select id="trip-resort-sel" style="flex:1;text-align:left;color:var(--label3)">'+opts+'</select>'
+    + '<button onclick="addTripResort()" style="background:var(--blue);color:#fff;border:none;border-radius:8px;padding:7px 14px;font-size:14px;font-family:inherit;cursor:pointer;white-space:nowrap">追加</button>'
+    + '</div>';
+  return html;
+}
+
+function addTripResort() {
+  var sel = document.getElementById('trip-resort-sel');
+  if (!sel || !sel.value) return;
+  var rid = sel.value;
+  if (S.tmp.tripResorts.indexOf(rid) === -1) S.tmp.tripResorts.push(rid);
+  // チップ部分だけ再描画
+  var wrap = document.getElementById('resort-chips-wrap');
+  if (wrap) wrap.innerHTML = renderResortChips();
+}
+
+function rmTripResort(i) {
+  S.tmp.tripResorts.splice(i, 1);
+  var wrap = document.getElementById('resort-chips-wrap');
+  if (wrap) wrap.innerHTML = renderResortChips();
+}
+
+function openTripAdd(){ S.tmp.tripMem=[]; S.tmp.tripResorts=[]; nav('trip-add','新しい遠征','遠征',true,'保存'); }
 
 function rTripAdd() {
-  var opts='<option value="">未選択</option>';
-  S.data.resorts.forEach(function(r){ opts+='<option value="'+r.id+'">'+e(r.name)+'</option>'; });
   var chips=S.tmp.tripMem.length
     ? S.tmp.tripMem.map(function(m,i){return'<span class="chip">'+e(m)+'<span class="cdel" onclick="rmTM('+i+')">×</span></span>';}).join('')
     : '<span class="ce">まだいません</span>';
   return '<div class="form-sec" style="margin-top:16px"><div class="form-label">遠征情報</div><div class="fg">'
     +'<div class="fr"><span class="fl">遠征名</span><input id="f-name" type="text" placeholder="例：白馬遠征" style="text-align:right"></div>'
-    +'<div class="fr"><span class="fl">ゲレンデ</span><select id="f-resort">'+opts+'</select></div>'
+    +'<div class="form-label" style="margin-top:16px">スキー場</div>'
+    +'<div class="fg" id="resort-chips-wrap">'+renderResortChips()+'</div>'
     +'<div class="fr"><span class="fl">出発日</span><input id="f-start" type="date"></div>'
     +'<div class="fr"><span class="fl">帰着日</span><input id="f-end" type="date"></div>'
     +'<div class="fr"><span class="fl">予算/人</span><input id="f-budget" type="number" placeholder="60000" style="text-align:right"><span class="fu">円</span></div>'
@@ -797,26 +926,76 @@ function rfTM(){ var el=document.getElementById('tm-chips');if(!el)return;el.inn
 
 function saveTrip(){
   var name=gv('f-name');if(!name){st('ts','遠征名を入力してください','err');return;}
-  var rid=gv('f-resort'),r=S.data.resorts.find(function(x){return x.id==rid;});
-  S.data.trips.push({id:Date.now(),name:name,resortId:rid,resortName:r?r.name:'',start:gv('f-start'),end:gv('f-end'),budget:parseInt(gv('f-budget'))||0,members:S.tmp.tripMem.slice()});
+  var resortIds=S.tmp.tripResorts.slice();
+  S.data.trips.push({id:Date.now(),name:name,resortIds:resortIds,start:gv('f-start'),end:gv('f-end'),budget:parseInt(gv('f-budget'))||0,members:S.tmp.tripMem.slice()});
   save(); goBack();
 }
 
-function openTripDetail(id){ S.tmp.vTrip=id;var t=S.data.trips.find(function(x){return x.id==id;});nav('trip-detail',t?t.name:'遠征詳細','遠征',false); }
+
+function openTripEdit(id) {
+  var t = S.data.trips.find(function(x){ return String(x.id)===String(id); });
+  if (!t) return;
+  S.tmp.vTrip = String(id);
+  S.tmp.tripMem = (t.members||[]).slice();
+  S.tmp.tripResorts = (t.resortIds||[]).slice();
+  nav('trip-edit', '遠征を編集', '戻る', true, '保存');
+}
+
+function rTripEdit() {
+  var t = S.data.trips.find(function(x){ return String(x.id)===String(S.tmp.vTrip); });
+  if (!t) return '<div class="empty">データなし</div>';
+  var chips = S.tmp.tripMem.length
+    ? S.tmp.tripMem.map(function(m,i){ return '<span class="chip">'+e(m)+'<span class="cdel" onclick="rmTM('+i+')">×</span></span>'; }).join('')
+    : '<span class="ce">まだいません</span>';
+  return '<div class="form-sec" style="margin-top:16px"><div class="form-label">遠征情報</div><div class="fg">'
+    +'<div class="fr"><span class="fl">遠征名</span><input id="f-name" type="text" value="'+e(t.name)+'" style="text-align:right"></div>'
+    +'<div class="form-label" style="margin-top:16px">スキー場</div>'
+    +'<div class="fg" id="resort-chips-wrap">'+renderResortChips()+'</div>'
+    +'<div class="fr"><span class="fl">出発日</span><input id="f-start" type="date" value="'+e(t.start||'')+'"></div>'
+    +'<div class="fr"><span class="fl">帰着日</span><input id="f-end" type="date" value="'+e(t.end||'')+'"></div>'
+    +'<div class="fr"><span class="fl">予算/人</span><input id="f-budget" type="number" value="'+(t.budget||'')+'" style="text-align:right"><span class="fu">円</span></div>'
+    +'</div></div>'
+    +'<div class="form-sec"><div class="form-label">メンバー</div><div class="fg">'
+    +'<div class="cw" id="tm-chips">'+chips+'</div>'
+    +'<div class="fr" style="border-top:0.5px solid var(--sep)"><input id="f-mem" type="text" placeholder="名前を入力..." style="flex:1;text-align:left"><button onclick="addTM()" style="background:var(--blue);color:#fff;border:none;border-radius:8px;padding:7px 14px;font-size:14px;font-family:inherit;cursor:pointer">追加</button></div>'
+    +'</div></div><div class="status" id="ts"></div>';
+}
+
+function saveTripEdit() {
+  var name = gv('f-name');
+  if (!name) { st('ts','遠征名を入力してください','err'); return; }
+  var t = S.data.trips.find(function(x){ return String(x.id)===String(S.tmp.vTrip); });
+  if (!t) return;
+  t.name     = name;
+  t.resortIds = S.tmp.tripResorts.slice();
+  t.start    = gv('f-start');
+  t.end      = gv('f-end');
+  t.budget   = parseInt(gv('f-budget'))||0;
+  t.members  = S.tmp.tripMem.slice();
+  save();
+  // 詳細画面に戻る
+  S.stack.pop();
+  S.screen = 'trip-detail';
+  nb(t.name, '遠征', true, false);
+  render();
+}
+
+function openTripDetail(id){ S.tmp.vTrip=String(id);var t=S.data.trips.find(function(x){return String(x.id)===String(id);});nav('trip-detail',t?t.name:'遠征詳細','遠征',false); }
 
 function rTripDetail(){
-  var t=S.data.trips.find(function(x){return x.id==S.tmp.vTrip;});
+  var t=S.data.trips.find(function(x){return String(x.id)===String(S.tmp.vTrip);});
   if(!t)return'<div class="empty">データなし</div>';
-  var r=S.data.resorts.find(function(x){return x.id==t.resortId;});
+  var resortObjs=(t.resortIds||[]).map(function(rid){ return S.data.resorts.find(function(x){return String(x.id)===String(rid);}); }).filter(Boolean);
+  var r=resortObjs[0]||null;
   var ni=nights(t.start,t.end);
   var sched='';
   if(t.start&&t.end){
     var s=new Date(t.start),en=new Date(t.end),nd=Math.round((en-s)/86400000),wd=['日','月','火','水','木','金','土'];
-    for(var i=0;i<=nd;i++){var d=new Date(s);d.setDate(d.getDate()+i);var lbl=(d.getMonth()+1)+'/'+d.getDate();var w=wd[d.getDay()];var tit=i===0?'移動日（出発）':i===nd?'帰宅日（移動）':(r?r.name+'　滑走':'滑走');var su=i===0?'新宿 → '+(r?r.name:'現地'):i===nd?'現地 → 帰宅':'終日滑走';sched+='<div class="schedule-row"><div class="sched-date"><div class="sched-dd">'+lbl+'</div><div class="sched-dw">'+w+'</div></div><div class="sched-body"><div class="sched-title">'+tit+'</div><div class="sched-sub">'+su+'</div></div></div>';}
+    for(var i=0;i<=nd;i++){var d=new Date(s);d.setDate(d.getDate()+i);var lbl=(d.getMonth()+1)+'/'+d.getDate();var w=wd[d.getDay()];var resortLabel=resortObjs.map(function(x){return x.name;}).join(' / ')||'現地';var tit=i===0?'移動日（出発）':i===nd?'帰宅日（移動）':resortLabel+'　滑走';var su=i===0?'新宿 → '+resortLabel:i===nd?resortLabel+' → 帰宅':'終日滑走';sched+='<div class="schedule-row"><div class="sched-date"><div class="sched-dd">'+lbl+'</div><div class="sched-dw">'+w+'</div></div><div class="sched-body"><div class="sched-title">'+tit+'</div><div class="sched-sub">'+su+'</div></div></div>';}
   }
   var mems=(t.members&&t.members.length)?t.members.map(function(m){return'<span class="mc">'+e(m)+'</span>';}).join(''):'<span class="ce" style="padding:8px 0;display:block">未設定</span>';
-  '<div class="detail-header">'
-    +'<div class="dh-top"><div class="dh-tag">遠征</div><div class="dh-name">'+e(t.name)+'</div><div class="dh-sub">'+e(r?r.name:(t.resortName||'ゲレンデ未定'))+(ni?' · '+ni:'')+'</div></div>'
+  return '<div class="detail-header">'
+    +'<div class="dh-top"><div class="dh-tag">遠征</div><div class="dh-name">'+e(t.name)+'</div><div class="dh-sub">'+e(resortObjs.length?resortObjs.map(function(x){return x.name;}).join(' · '):'スキー場未定')+(ni?' · '+ni:'')+'</div></div>'
     +'<div class="dh-stats">'
     +'<div class="dh-stat"><div class="dh-stat-v">'+(t.members?t.members.length:0)+'</div><div class="dh-stat-l">人</div></div>'
     +'<div class="dh-stat"><div class="dh-stat-v">'+(t.budget?'¥'+Math.round(t.budget/1000)+'k':'—')+'</div><div class="dh-stat-l">予算/人</div></div>'
@@ -824,20 +1003,21 @@ function rTripDetail(){
     +'</div></div>'
     +(sched?'<div class="sec"><div class="sh">日程</div><div class="lg" style="margin:0 16px">'+sched+'</div></div>':'')
     +'<div class="sec"><div class="sh">メンバー</div><div class="lg" style="margin:0 16px"><div class="member-wrap">'+mems+'</div></div></div>'
-    +(r?'<div class="sec"><div class="sh">ゲレンデ</div><div class="lg" style="margin:0 16px">'+lr('','',r.name,r.area||'','openResortFromTrip('+r.id+')')+'</div></div>':'')
-    +'<button class="btn bd btn-first" onclick="delTrip('+t.id+')">この遠征を削除</button>';
+    +(resortObjs.length?'<div class="sec"><div class="sh">スキー場</div><div class="lg" style="margin:0 16px">'+resortObjs.map(function(rv){return lr('','',rv.name,rv.area||'','openResortFromTrip('+rv.id+')');}).join('')+'</div></div>':'')
+    +'<button class="btn bs btn-first" data-action="edit-trip" data-id="'+t.id+'">遠征を編集</button>'
+    +'<button class="btn bd" data-action="del-trip" data-id="'+t.id+'">この遠征を削除</button>';
 }
 
-function openResortFromTrip(id){ S.tmp.vResort=id;var r=S.data.resorts.find(function(x){return x.id==id;});nav('resort-detail',r?r.name:'ゲレンデ詳細','戻る',false); }
-function delTrip(id){ if(!confirm('削除しますか？'))return;S.data.trips=S.data.trips.filter(function(t){return t.id!=id;});save();goBack(); }
+function openResortFromTrip(id){ S.tmp.vResort=String(id);var r=S.data.resorts.find(function(x){return String(x.id)===String(id);});nav('resort-detail',r?r.name:'スキー場詳細','戻る',false); }
+function delTrip(id){ S.data.trips=S.data.trips.filter(function(t){return String(t.id)!==String(id);});save();goBack(); }
 
 // ===================================================
-// ゲレンデ
+// スキー場
 // ===================================================
 function rResorts(){
-  var h='<div class="page-header"><div class="page-title">ゲレンデ</div></div><div class="sec"><div class="sh">お気に入りゲレンデ</div>';
+  var h='<div class="page-header"><div class="page-title">スキー場</div></div><div class="sec"><div class="sh">お気に入りスキー場</div>';
   if(!S.data.resorts.length){
-    h+='<div class="lg"><div class="empty"><div class="empty-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M3 20L9 10L14 16L18 11L21 20H3Z" stroke="#c7c7cc" stroke-width="1.5" stroke-linejoin="round"/></svg></div><div class="empty-title">ゲレンデがありません</div><div class="empty-sub">追加ボタンから登録しよう</div></div></div>';
+    h+='<div class="lg"><div class="empty"><div class="empty-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M3 20L9 10L14 16L18 11L21 20H3Z" stroke="#c7c7cc" stroke-width="1.5" stroke-linejoin="round"/></svg></div><div class="empty-title">スキー場がありません</div><div class="empty-sub">追加ボタンから登録しよう</div></div></div>';
   } else {
     h+='<div class="lg">';
     S.data.resorts.forEach(function(r){
@@ -846,17 +1026,17 @@ function rResorts(){
     });
     h+='</div>';
   }
-  return h+'</div><div class="add-btn-wrap"><button class="add-btn" onclick="openResortAdd()">＋ ゲレンデを登録</button></div>';
+  return h+'</div><div class="add-btn-wrap"><button class="add-btn" onclick="openResortAdd()">＋ スキー場を登録</button></div>';
 }
 
-function openResortAdd(){ S.tmp.resortFeat=[]; nav('resort-add','ゲレンデを登録','ゲレンデ',true,'保存'); }
+function openResortAdd(){ S.tmp.resortFeat=[]; nav('resort-add','スキー場を登録','スキー場',true,'保存'); }
 
 function rResortAdd(){
   var chips=S.tmp.resortFeat.length
     ? S.tmp.resortFeat.map(function(f,i){return'<span class="chip">'+e(f)+'<span class="cdel" onclick="rmFeat('+i+')">×</span></span>';}).join('')
     : '<span class="ce">未設定</span>';
   return '<div class="form-sec" style="margin-top:16px"><div class="form-label">基本情報</div><div class="fg">'
-    +fr2('r-name',   'ゲレンデ名','text','例：白馬八方尾根')
+    +fr2('r-name',   'スキー場名','text','例：白馬八方尾根')
     +fr2('r-area',   '都道府県',  'text','例：長野県')
     +fr2('r-region', '地域',      'text','例：白馬エリア')
     +fr2('r-url',    '公式サイト','url', 'https://')
@@ -888,7 +1068,7 @@ function rmFeat(i){ S.tmp.resortFeat.splice(i,1);rfFeat(); }
 function rfFeat(){ var el=document.getElementById('feat-chips');if(!el)return;el.innerHTML=S.tmp.resortFeat.length?S.tmp.resortFeat.map(function(f,i){return'<span class="chip">'+e(f)+'<span class="cdel" onclick="rmFeat('+i+')">×</span></span>';}).join(''):'<span class="ce">未設定</span>'; }
 
 function saveResort(){
-  var name=gv('r-name');if(!name){st('rs','ゲレンデ名を入力してください','err');return;}
+  var name=gv('r-name');if(!name){st('rs','スキー場名を入力してください','err');return;}
   S.data.resorts.push({
     id:Date.now(),name:name,
     area:gv('r-area'),region:gv('r-region'),url:gv('r-url'),
@@ -899,14 +1079,71 @@ function saveResort(){
   save();S.tmp.resortFeat=[];goBack();
 }
 
-function openResortDetail(id){ S.tmp.vResort=id;var r=S.data.resorts.find(function(x){return x.id==id;});nav('resort-detail',r?r.name:'ゲレンデ詳細','ゲレンデ',false); }
+function openResortEdit(id){
+  S.tmp.vResort=String(id);
+  var r=S.data.resorts.find(function(x){return String(x.id)===String(id);});
+  if(!r)return;
+  S.tmp.resortFeat=(r.features||[]).slice();
+  nav('resort-edit','スキー場を編集','戻る',true,'保存');
+}
+function rResortEdit(){
+  var r=S.data.resorts.find(function(x){return String(x.id)===String(S.tmp.vResort);});
+  if(!r)return '<div class="empty"><div class="empty-title">データが見つかりません</div></div>';
+  var chips=S.tmp.resortFeat.length
+    ? S.tmp.resortFeat.map(function(f,i){return'<span class="chip">'+e(f)+'<span class="cdel" onclick="rmFeat('+i+')">×</span></span>';}).join('')
+    : '<span class="ce">未設定</span>';
+  return '<div class="form-sec" style="margin-top:16px"><div class="form-label">基本情報</div><div class="fg">'
+    +'<div class="fr"><span class="fl sm">スキー場名</span><input id="r-name" type="text" placeholder="例：白馬八方尾根" value="'+e(r.name||'')+'" style="text-align:right"></div>'
+    +'<div class="fr"><span class="fl sm">都道府県</span><input id="r-area" type="text" placeholder="例：長野県" value="'+e(r.area||'')+'" style="text-align:right"></div>'
+    +'<div class="fr"><span class="fl sm">地域</span><input id="r-region" type="text" placeholder="例：白馬エリア" value="'+e(r.region||'')+'" style="text-align:right"></div>'
+    +'<div class="fr"><span class="fl sm">公式サイト</span><input id="r-url" type="url" placeholder="https://" value="'+e(r.url||'')+'" style="text-align:right"></div>'
+    +'</div></div>'
+    +'<div class="form-sec"><div class="form-label">営業情報</div><div class="fg">'
+    +'<div class="fr"><span class="fl sm">営業期間</span><input id="r-season" type="text" placeholder="例：12月上旬〜3月下旬" value="'+e(r.season||'')+'" style="text-align:right"></div>'
+    +'<div class="fr"><span class="fl sm">営業時間</span><input id="r-hours" type="text" placeholder="例：8:30〜16:30" value="'+e(r.hours||'')+'" style="text-align:right"></div>'
+    +'<div class="fr"><span class="fl sm">ナイター</span><input id="r-night" type="text" placeholder="例：〜20:00（土日のみ）" value="'+e(r.night||'')+'" style="text-align:right"></div>'
+    +'</div></div>'
+    +'<div class="form-sec"><div class="form-label">コース情報</div><div class="fg">'
+    +'<div class="fr"><span class="fl sm">コース数</span><input id="r-courses" type="text" placeholder="例：47本" value="'+e(r.courses||'')+'" style="text-align:right"></div>'
+    +'<div class="fr"><span class="fl sm">リフト数</span><input id="r-lifts" type="text" placeholder="例：20本" value="'+e(r.lifts||'')+'" style="text-align:right"></div>'
+    +'<div class="fr"><span class="fl sm">最高標高</span><input id="r-alt-top" type="text" placeholder="例：1,831m" value="'+e(r.altitude_top||'')+'" style="text-align:right"></div>'
+    +'<div class="fr"><span class="fl sm">麓標高</span><input id="r-alt-base" type="text" placeholder="例：760m" value="'+e(r.altitude_base||'')+'" style="text-align:right"></div>'
+    +'<div class="fr"><span class="fl sm">対象レベル</span><input id="r-level" type="text" placeholder="例：初〜上級" value="'+e(r.level||'')+'" style="text-align:right"></div>'
+    +'</div></div>'
+    +'<div class="form-sec"><div class="form-label">特徴タグ</div><div class="fg">'
+    +'<div class="cw" id="feat-chips">'+chips+'</div>'
+    +'<div class="fr" style="border-top:0.5px solid var(--sep)"><input id="f-feat" type="text" placeholder="例：パウダー / オフピステ" style="flex:1;text-align:left"><button onclick="addFeat()" style="background:var(--blue);color:#fff;border:none;border-radius:8px;padding:7px 14px;font-size:14px;font-family:inherit;cursor:pointer">追加</button></div>'
+    +'</div></div>'
+    +'<div class="form-sec"><div class="form-label">メモ</div><div class="fg"><div class="fr"><textarea id="r-memo" placeholder="アクセス・おすすめポイントなど...">'+e(r.memo||'')+'</textarea></div></div></div>'
+    +'<div class="status" id="rs"></div>';
+}
+function saveResortEdit(){
+  var name=gv('r-name');
+  if(!name){st('rs','スキー場名を入力してください','err');return;}
+  var r=S.data.resorts.find(function(x){return String(x.id)===String(S.tmp.vResort);});
+  if(!r){st('rs','データが見つかりません','err');return;}
+  r.name=name; r.area=gv('r-area'); r.region=gv('r-region'); r.url=gv('r-url');
+  r.season=gv('r-season'); r.hours=gv('r-hours'); r.night=gv('r-night');
+  r.courses=gv('r-courses'); r.lifts=gv('r-lifts');
+  r.altitude_top=gv('r-alt-top'); r.altitude_base=gv('r-alt-base');
+  r.level=gv('r-level'); r.memo=gv('r-memo');
+  r.features=S.tmp.resortFeat.slice();
+  save(); S.tmp.resortFeat=[];
+  // 詳細画面に戻る
+  S.stack=S.stack.slice(0,-1); // editのスタックを取り除く
+  S.screen='resort-detail';
+  nb(r.name,'スキー場',true,false);
+  render();
+}
+
+function openResortDetail(id){ S.tmp.vResort=String(id);var r=S.data.resorts.find(function(x){return String(x.id)===String(id);});nav('resort-detail',r?r.name:'スキー場詳細','スキー場',false); }
 
 function rResortDetail(){
-  var r=S.data.resorts.find(function(x){return x.id==S.tmp.vResort;});
+  var r=S.data.resorts.find(function(x){return String(x.id)===String(S.tmp.vResort);});
   if(!r)return'<div class="empty">データなし</div>';
   var feats=(r.features||[]).map(function(f){return'<span class="htag">'+e(f)+'</span>';}).join('');
   var h='<div class="detail-header">'
-    +'<div class="dh-top"><div class="dh-tag">ゲレンデ</div><div class="dh-name">'+e(r.name)+'</div><div class="dh-sub">'+e((r.area||'')+(r.region?' · '+r.region:''))+'</div></div>'
+    +'<div class="dh-top"><div class="dh-tag">スキー場</div><div class="dh-name">'+e(r.name)+'</div><div class="dh-sub">'+e((r.area||'')+(r.region?' · '+r.region:''))+'</div></div>'
     +'<div class="dh-stats">'
     +'<div class="dh-stat"><div class="dh-stat-v">'+e(r.courses||'—')+'</div><div class="dh-stat-l">コース</div></div>'
     +'<div class="dh-stat"><div class="dh-stat-v">'+e(r.lifts||'—')+'</div><div class="dh-stat-l">リフト</div></div>'
@@ -943,28 +1180,29 @@ function rResortDetail(){
     h+='<div class="info-row"><span class="iv" style="color:var(--label3);text-align:left">遠征が登録されていません</span></div>';
   } else {
     S.data.trips.forEach(function(t){
-      var isSet=t.resortId==r.id;
+      var isSet=(t.resortIds||[]).some(function(rid){return String(rid)===String(r.id);});
       h+='<div class="set-row" onclick="setRT('+r.id+','+t.id+')">'
         +'<span class="set-label">'+e(t.name)+'</span>'
-        +'<span class="set-action" style="color:'+(isSet?'var(--green)':'var(--ice)')+'">'+(isSet?'✓ 設定済み':'設定する')+'</span></div>';
+        +'<span class="set-action" style="color:'+(isSet?'var(--green)':'var(--blue)')+'">'+(isSet?'✓ 設定済み':'追加する')+'</span></div>';
     });
   }
   h+='</div></div>';
-  h+='<button class="btn bd btn-first" onclick="delResort('+r.id+')">登録を削除</button>';
+  h+='<button class="btn bs btn-first" data-action="edit-resort" data-id="'+r.id+'">スキー場情報を編集</button>';
+  h+='<button class="btn bd" data-action="del-resort" data-id="'+r.id+'">スキー場を削除</button>';
   return h;
 }
 
 function ir(k,v){ return '<div class="info-row"><span class="ik">'+e(k)+'</span><span class="iv">'+e(v)+'</span></div>'; }
 function setRT(rid,tid){
-  var t=S.data.trips.find(function(x){return x.id==tid;}),r=S.data.resorts.find(function(x){return x.id==rid;});
-  if(!t||!r)return; t.resortId=rid; t.resortName=r.name; save(); render();
+  var t=S.data.trips.find(function(x){return String(x.id)===String(tid);}),r=S.data.resorts.find(function(x){return String(x.id)===String(rid);});
+  if(!t||!r)return;
+  if(!t.resortIds) t.resortIds=[];
+  var sidx=t.resortIds.indexOf(String(rid));
+  if(sidx===-1){ t.resortIds.push(String(rid)); }
+  else { t.resortIds.splice(sidx,1); } // 既に設定済みならトグルで解除
+  save(); render();
 }
-function delResort(id){
-  if(!confirm('削除しますか？'))return;
-  S.data.resorts=S.data.resorts.filter(function(r){return r.id!=id;});
-  S.data.trips.forEach(function(t){if(t.resortId==id){t.resortId='';t.resortName='';}});
-  save();goBack();
-}
+function delResort(id){ S.data.resorts=S.data.resorts.filter(function(r){return String(r.id)!==String(id);});S.data.trips.forEach(function(t){if(t.resortIds){t.resortIds=t.resortIds.filter(function(rid){return String(rid)!==String(id);});}});save();goBack(); }
 
 // ===================================================
 // 費用
@@ -1098,10 +1336,10 @@ function saveGear(){
   S.tmp.gearSport=d.sport; S.tmp.gearFilter=d.status; goBack();
 }
 
-function openGD(id){ S.tmp.vGear=id;var g=S.data.gear.find(function(x){return x.id==id;});nav('gear-detail',g?(g.name||'ギア詳細'):'ギア詳細','ギア',false); }
+function openGD(id){ S.tmp.vGear=String(id);var g=S.data.gear.find(function(x){return String(x.id)===String(id);});nav('gear-detail',g?(g.name||'ギア詳細'):'ギア詳細','ギア',false); }
 
 function rGearDetail(){
-  var g=S.data.gear.find(function(x){return x.id==S.tmp.vGear;});
+  var g=S.data.gear.find(function(x){return String(x.id)===String(S.tmp.vGear);});
   if(!g)return'<div class="empty">データなし</div>';
   var cats=GC[g.sport]||GC.snowboard,cat=cats.find(function(c){return c.key===g.category;})||{icon:'OT',label:'その他'};
   return '<div class="hc" style="margin-top:16px">'
@@ -1116,11 +1354,60 @@ function rGearDetail(){
     +(g.price?ir('価格','¥'+Number(g.price).toLocaleString()):'')+(g.shop?ir('購入店',g.shop):'')
     +'</div>'
     +(g.memo?'<div class="memo-block">'+e(g.memo)+'</div>':'')
-    +'<button class="btn bs btn-first" onclick="togGS('+g.id+')">'+(g.status==='wishlist'?'所持中に移動':'ほしいリストに移動')+'</button>'
-    +'<button class="btn bd" onclick="delGear('+g.id+')">このギアを削除</button>';
+    +'<button class="btn bs btn-first" data-action="tog-gear" data-id="'+g.id+'">'+(g.status==='wishlist'?'所持中に移動':'ほしいリストに移動')+'</button>'
+    +'<button class="btn bd" data-action="del-gear" data-id="'+g.id+'">このギアを削除</button>';
 }
-function togGS(id){ var g=S.data.gear.find(function(x){return x.id==id;});if(!g)return;g.status=g.status==='wishlist'?'owned':'wishlist';save();render(); }
-function delGear(id){ if(!confirm('削除しますか？'))return;S.data.gear=S.data.gear.filter(function(x){return x.id!=id;});save();goBack(); }
+function togGS(id){ var g=S.data.gear.find(function(x){return String(x.id)===String(id);});if(!g)return;g.status=g.status==='wishlist'?'owned':'wishlist';save();render(); }
+function delGear(id){ S.data.gear=S.data.gear.filter(function(x){return String(x.id)!==String(id);});save();goBack(); }
+
+
+
+// ===== アクションシート（削除確認UI）=====
+function showActionSheet(message, destructiveLabel, onConfirm) {
+  var overlay = document.createElement('div');
+  overlay.className = 'as-overlay';
+  overlay.innerHTML =
+    '<div class="as-sheet">'
+    + '<div class="as-group">'
+    + '<div class="as-title-row"><span class="as-title-text">' + message + '</span></div>'
+    + '<button class="as-btn as-btn-destructive" id="as-confirm">' + destructiveLabel + '</button>'
+    + '</div>'
+    + '<div class="as-group">'
+    + '<button class="as-btn as-btn-cancel" id="as-cancel">キャンセル</button>'
+    + '</div>'
+    + '</div>';
+  document.body.appendChild(overlay);
+  overlay.querySelector('#as-confirm').addEventListener('click', function() {
+    overlay.remove(); onConfirm();
+  });
+  overlay.querySelector('#as-cancel').addEventListener('click', function() {
+    overlay.remove();
+  });
+  overlay.addEventListener('click', function(ev) {
+    if (ev.target === overlay) overlay.remove();
+  });
+}
+
+// ===== ボタンイベント委任 =====
+document.addEventListener('click', function(ev) {
+  var btn = ev.target.closest('[data-action]');
+  if (!btn) return;
+  var action = btn.dataset.action;
+  var id = btn.dataset.id;
+  if (action === 'del-trip') {
+    showActionSheet('この操作は取り消せません', 'この遠征を削除', function() { delTrip(id); });
+  } else if (action === 'del-resort') {
+    showActionSheet('この操作は取り消せません', 'このスキー場を削除', function() { delResort(id); });
+  } else if (action === 'del-gear') {
+    showActionSheet('この操作は取り消せません', 'このギアを削除', function() { delGear(id); });
+  } else if (action === 'edit-trip') {
+    openTripEdit(id);
+  } else if (action === 'edit-resort') {
+    openResortEdit(id);
+  } else if (action === 'tog-gear') {
+    togGS(id);
+  }
+});
 
 // ===== 起動 =====
 load(); render();
