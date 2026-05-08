@@ -613,9 +613,9 @@ function rTrips() {
 // ===== スキー場複数選択UI =====
 function renderResortChips() {
   var html = '';
-  // 選択済みスキー場チップ
+  // 選択済みスキー場チップ（枠なし・シンプルな背景なし）
   if (S.tmp.tripResorts.length) {
-    html += '<div class="cw" id="trip-resort-chips">';
+    html += '<div id="trip-resort-chips" style="display:flex;flex-wrap:wrap;gap:7px;padding:4px 0 10px">';
     S.tmp.tripResorts.forEach(function(rid, i) {
       var r = S.data.resorts.find(function(x){ return String(x.id)===String(rid); });
       var name = r ? r.name : '不明';
@@ -623,7 +623,7 @@ function renderResortChips() {
     });
     html += '</div>';
   } else {
-    html += '<div class="cw" id="trip-resort-chips"><span class="ce">未選択</span></div>';
+    html += '<div id="trip-resort-chips" style="padding:4px 0 10px;font-size:14px;color:var(--label3)">未選択</div>';
   }
   // スキー場追加セレクト
   var opts = '<option value="">スキー場を選択...</option>';
@@ -632,9 +632,9 @@ function renderResortChips() {
       opts += '<option value="'+r.id+'">'+e(r.name)+'</option>';
     }
   });
-  html += '<div class="fr" style="border-top:0.5px solid var(--sep)">'
-    + '<select id="trip-resort-sel" style="flex:1;text-align:left;color:var(--label3)">'+opts+'</select>'
-    + '<button onclick="addTripResort()" style="background:var(--blue);color:#fff;border:none;border-radius:8px;padding:7px 14px;font-size:14px;font-family:inherit;cursor:pointer;white-space:nowrap">追加</button>'
+  html += '<div style="display:flex;align-items:center;gap:10px;padding-top:10px;border-top:0.5px solid var(--sep)">'
+    + '<select id="trip-resort-sel" style="flex:1;border:none;outline:none;font-size:15px;color:var(--label3);background:transparent;font-family:inherit;-webkit-appearance:none">'+opts+'</select>'
+    + '<button onclick="addTripResort()" style="background:var(--blue);color:#fff;border:none;border-radius:10px;padding:8px 18px;font-size:15px;font-weight:600;font-family:inherit;cursor:pointer;white-space:nowrap;box-shadow:0 2px 8px rgba(0,122,255,0.28)">追加</button>'
     + '</div>';
   return html;
 }
@@ -663,8 +663,7 @@ function rTripAdd() {
     : '<span class="ce">まだいません</span>';
   return '<div class="form-sec" style="margin-top:16px"><div class="form-label">遠征情報</div><div class="fg">'
     +'<div class="fr"><span class="fl">遠征名</span><input id="f-name" type="text" placeholder="例：白馬遠征" style="text-align:right"></div>'
-    +'<div class="form-label" style="margin-top:16px">スキー場</div>'
-    +'<div class="fg" id="resort-chips-wrap">'+renderResortChips()+'</div>'
+    +'<div class="form-sec" style="margin-top:0"><div class="form-label">スキー場</div><div class="fg" id="resort-chips-wrap" style="padding:14px 16px">'+renderResortChips()+'</div></div>'
     +'<div class="fr"><span class="fl">出発日</span><input id="f-start" type="date"></div>'
     +'<div class="fr"><span class="fl">帰着日</span><input id="f-end" type="date"></div>'
     +'<div class="fr"><span class="fl">予算/人</span><input id="f-budget" type="number" placeholder="60000" style="text-align:right"><span class="fu">円</span></div>'
@@ -704,8 +703,7 @@ function rTripEdit() {
     : '<span class="ce">まだいません</span>';
   return '<div class="form-sec" style="margin-top:16px"><div class="form-label">遠征情報</div><div class="fg">'
     +'<div class="fr"><span class="fl">遠征名</span><input id="f-name" type="text" value="'+e(t.name)+'" style="text-align:right"></div>'
-    +'<div class="form-label" style="margin-top:16px">スキー場</div>'
-    +'<div class="fg" id="resort-chips-wrap">'+renderResortChips()+'</div>'
+    +'<div class="form-sec" style="margin-top:0"><div class="form-label">スキー場</div><div class="fg" id="resort-chips-wrap" style="padding:14px 16px">'+renderResortChips()+'</div></div>'
     +'<div class="fr"><span class="fl">出発日</span><input id="f-start" type="date" value="'+e(t.start||'')+'"></div>'
     +'<div class="fr"><span class="fl">帰着日</span><input id="f-end" type="date" value="'+e(t.end||'')+'"></div>'
     +'<div class="fr"><span class="fl">予算/人</span><input id="f-budget" type="number" value="'+(t.budget||'')+'" style="text-align:right"><span class="fu">円</span></div>'
